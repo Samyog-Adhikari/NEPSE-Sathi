@@ -83,7 +83,7 @@ Before you write or edit `package.json`, `requirements.txt`/`pyproject.toml`, or
 | **Hosting: Backend** | Render or Fly.io | Free tier; cold-starts after idle — design loading states for it (TRD §1) |
 | **Hosting: DB** | Supabase | Free tier pauses after inactivity — weekly keep-alive cron (§15) |
 | **Jobs** | GitHub Actions scheduled workflows | Scraping, indicator calc, keep-alive ping — no always-on server needed |
-| **Admin panel** | Vite + React | Separate internal-only app, no SSR/bilingual routing needed (TRD §1) |
+| **Admin panel** | Next.js (`/admin` route) | Integrated internal-only route inside frontend app |
 | **Monitoring** | Sentry (frontend + backend SDKs) | Error tracking |
 | **AI serving** | LiteLLM in-process | Unified interface over Gemini/Groq/NIM/OpenRouter free tiers — pin to a current patched version, never an old requirements file |
 | **Mobile (final stage only)** | Capacitor | Not part of the day-to-day stack — wraps the finished web build once, at the end. See §16. |
@@ -99,51 +99,46 @@ Before you write or edit `package.json`, `requirements.txt`/`pyproject.toml`, or
 
 ```
 NepseInsight/
-├── frontend/
-│   ├── web/                          # Next.js app (App Router) — the only app you actively build
-│   │   ├── src/
-│   │   │   ├── app/
-│   │   │   │   ├── [locale]/         # /ne and /en routes — see §12
-│   │   │   │   │   ├── (dashboard)/
-│   │   │   │   │   ├── stocks/[symbol]/
-│   │   │   │   │   ├── ipo/
-│   │   │   │   │   ├── news/
-│   │   │   │   │   ├── portfolio/
-│   │   │   │   │   ├── journal/
-│   │   │   │   │   ├── floorsheet/
-│   │   │   │   │   └── ai/
-│   │   │   │   ├── api/              # Thin proxy routes only — never business logic
-│   │   │   │   └── layout.tsx
-│   │   │   ├── lib/
-│   │   │   │   ├── env.ts            # Zod-validated NEXT_PUBLIC_* env
-│   │   │   │   ├── supabase/
-│   │   │   │   │   ├── client.ts     # Browser client (anon key only)
-│   │   │   │   │   └── server.ts     # Server client (server-side only, never bundled)
-│   │   │   │   └── api/
-│   │   │   │       └── client.ts     # Fetch wrapper → FastAPI, attaches Supabase JWT
-│   │   │   ├── components/
-│   │   │   │   ├── RequireAuth.tsx
-│   │   │   │   ├── ErrorBoundary.tsx
-│   │   │   │   ├── DataFreshnessBadge.tsx
-│   │   │   │   └── ui/               # shadcn primitives, themed per §2 design direction
-│   │   │   └── features/             # One folder per domain area — see §9
-│   │   │       ├── dashboard/
-│   │   │       ├── stock-detail/
-│   │   │       ├── technical-analysis/
-│   │   │       ├── ipo-center/
-│   │   │       ├── news/
-│   │   │       ├── portfolio/
-│   │   │       ├── journal/
-│   │   │       ├── floorsheet/
-│   │   │       └── ai-outlook/
-│   │   ├── public/
-│   │   ├── .env.example
-│   │   └── package.json
-│   │
-│   └── admin/                        # Vite + React internal tool (TRD §1)
-│       ├── src/
-│       ├── .env.example
-│       └── package.json
+├── frontend/                         # Next.js app (App Router) — unified investor & admin portal
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── [locale]/             # /ne and /en routes — see §12
+│   │   │   │   ├── (dashboard)/
+│   │   │   │   ├── stocks/[symbol]/
+│   │   │   │   ├── ipo/
+│   │   │   │   ├── news/
+│   │   │   │   ├── portfolio/
+│   │   │   │   ├── journal/
+│   │   │   │   ├── floorsheet/
+│   │   │   │   ├── ai/
+│   │   │   │   └── admin/            # Integrated internal system control route
+│   │   │   ├── api/                  # Thin proxy routes only — never business logic
+│   │   │   └── layout.tsx
+│   │   ├── lib/
+│   │   │   ├── env.ts                # Zod-validated NEXT_PUBLIC_* env
+│   │   │   ├── supabase/
+│   │   │   │   ├── client.ts         # Browser client (anon key only)
+│   │   │   │   └── server.ts         # Server client (server-side only, never bundled)
+│   │   │   └── api/
+│   │   │       └── client.ts         # Fetch wrapper → FastAPI, attaches Supabase JWT
+│   │   ├── components/
+│   │   │   ├── RequireAuth.tsx
+│   │   │   ├── ErrorBoundary.tsx
+│   │   │   ├── DataFreshnessBadge.tsx
+│   │   │   └── ui/                   # shadcn primitives, themed per §2 design direction
+│   │   └── features/                 # One folder per domain area — see §9
+│   │       ├── dashboard/
+│   │       ├── stock-detail/
+│   │       ├── technical-analysis/
+│   │       ├── ipo-center/
+│   │       ├── news/
+│   │       ├── portfolio/
+│   │       ├── journal/
+│   │       ├── floorsheet/
+│   │       └── ai-outlook/
+│   ├── public/
+│   ├── .env.example
+│   └── package.json
 │
 ├── backend/
 │   ├── app/
@@ -309,7 +304,7 @@ TELEGRAM_CHAT_ID=your_chat_id
 SENTRY_DSN=https://your_sentry_dsn_here
 ```
 
-### `frontend/web/.env.example`
+### `frontend/.env.example`
 
 ```env
 # ── Supabase (public — anon key only, RLS enforces real access control) ──

@@ -69,17 +69,16 @@ These rules exist so that "done" always means actually done, and so nothing here
 **Goal:** A clean, correctly structured, empty-but-runnable skeleton. No features yet.
 
 **Tasks** (per `BLUEPRINT_CHECKS.md` §2, §3):
-- Create the full repository folder structure from §2 (`apps/web`, `apps/admin`, `backend`, `.github/workflows`, `postman`, `docs`) — empty module folders are fine at this stage, just the skeleton.
+- Create the full repository folder structure from §2 (`frontend`, `backend`, `.github/workflows`, `postman`, `docs`) — empty module folders are fine at this stage, just the skeleton.
 - Initialize git, add the `.gitignore` from §2 exactly as specified.
 - Backend: create `backend/.venv`, activate it, initialize `requirements.txt`/`pyproject.toml`, install FastAPI + the core dependencies needed to boot an empty app (verify latest versions per the Version Safety Rule — do not copy any number from `BLUEPRINT_CHECKS.md`).
-- Frontend: scaffold Next.js (App Router) in `apps/web`, scaffold Vite+React in `apps/admin`. Install core dependencies (Tailwind, shadcn/ui, TanStack Query, Zod, React Hook Form, DOMPurify) — again, verify current versions, don't hardcode.
-- Create `.env.example` for `backend/` and `apps/web/` exactly matching §3's field lists (placeholder values only).
+- Frontend: scaffold Next.js (App Router) in `frontend/` (with admin route integrated under `/admin`). Install core dependencies (Tailwind, TanStack Query, Zod, React Hook Form, DOMPurify) — again, verify current versions, don't hardcode.
+- Create `.env.example` for `backend/` and `frontend/` exactly matching §3's field lists (placeholder values only).
 - Create real local `.env` files (gitignored) with actual dev-time values the person supplies (Supabase project URL/keys, etc.) — ask for these if not already provided.
-- Wire up the Pydantic Settings (`backend/app/core/config.py`) and Zod env validation (`apps/web/src/lib/env.ts`) from §3 so both apps crash loudly on misconfiguration rather than running with bad env.
-- Confirm both apps boot: FastAPI serves `/health` returning `200`; Next.js dev server renders a placeholder page.
-- Confirm `apps/admin` boots as an empty Vite+React shell (full admin build is a later phase — this just proves the second app scaffolds correctly).
+- Wire up the Pydantic Settings (`backend/app/core/config.py`) and Zod env validation (`frontend/src/lib/env.ts`) from §3 so both apps crash loudly on misconfiguration rather than running with bad env.
+- Confirm both apps boot: FastAPI serves `/health` returning `200`; Next.js dev server renders the dashboard and `/admin` routes cleanly.
 
-**Security checklist for this phase** (§7 "Environment & Configuration"): zero secrets hardcoded in source; `.env`/`.env.*` correctly gitignored with only `.env.example` committed; env validated at startup so both apps fail loudly on bad config; confirm `SUPABASE_SERVICE_ROLE_KEY` is only ever referenced in `backend/`, never in `apps/web` or `apps/admin`, from the very first commit.
+**Security checklist for this phase** (§7 "Environment & Configuration"): zero secrets hardcoded in source; `.env`/`.env.*` correctly gitignored with only `.env.example` committed; env validated at startup so both apps fail loudly on bad config; confirm `SUPABASE_SERVICE_ROLE_KEY` is only ever referenced in `backend/`, never in `frontend/`, from the very first commit.
 
 **Definition of Done:**
 - Folder structure matches §2 exactly.
@@ -93,7 +92,7 @@ These rules exist so that "done" always means actually done, and so nothing here
 2. Run the backend inside its venv and hit `/health` in a browser or `curl` — confirm `200`.
 3. Run the frontend dev server and open it — confirm it loads with no red console errors.
 4. Open `.env.example` in both apps — confirm every variable listed in `BLUEPRINT_CHECKS.md` §3 is present with a placeholder, and confirm the real `.env` files are *not* visible in `git status`.
-5. `grep -r "SUPABASE_SERVICE_ROLE" apps/web apps/admin` — confirm zero matches.
+5. `grep -r "SUPABASE_SERVICE_ROLE" frontend` — confirm zero matches.
 
 ---
 
