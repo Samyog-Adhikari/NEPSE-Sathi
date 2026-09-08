@@ -1,5 +1,12 @@
 # NEPSE Insight — Agent Execution Playbook
 
+> **STATUS UPDATE (Backend Completed & Verified):**
+> All backend implementation and architecture requirements up to and including the backend are **100% COMPLETED and verified live against Supabase**:
+> - Autonomous Scraping Pipeline (Stocks, Indices, Floorsheet, Brokers, IPO, News) with market hours & holiday awareness.
+> - Swappable `MarketDataProvider` abstraction layer (§13.1).
+> - All 14 Domain Modules (Market, Stocks, Technicals, IPO, News, Floorsheet, Brokers, Portfolio with CSV Import/Export, Watchlist, Journal with Paper Trading, AI Outlook, Bilingual RAG Explainer, Auth, Admin).
+> - Next focus is the Next.js Frontend UI (Phase 2 / Phase 3).
+
 > **Companion document:** `BLUEPRINT_CHECKS.md` — this file tells the agent *what order to do things in and when to stop*; `BLUEPRINT_CHECKS.md` tells it *exactly how* to build each piece (code patterns, schemas, security checklists, module reference). Every phase below points back to specific sections of `BLUEPRINT_CHECKS.md`. Read `BLUEPRINT_CHECKS.md` in full before Phase 0. `BLUEPRINT_CHECKS.md` is now self-contained — it was originally formalized from `prd.md`/`trd.md`, which have since been removed; do not treat this playbook as depending on files that no longer exist.
 
 This is a **production-readiness** playbook, not a prototype playbook. It is intentionally long and phase-heavy — a financial-data app handling user portfolios, AI-generated market outlooks, and scraped third-party data has a wide attack surface and a real cost to getting security, data-freshness, or the "not financial advice" boundary wrong. Fifteen phases (0–14) is the right size for that: each phase is scoped to one thing that can be fully verified before the next thing is allowed to depend on it. Collapsing phases to hit a smaller number would just mean bundling unrelated verification together and losing the ability to catch a problem before it's buried under three more phases of code built on top of it.
