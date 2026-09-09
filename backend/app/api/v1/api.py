@@ -13,7 +13,6 @@ from app.modules.auth.router import router as auth_router
 from app.modules.admin.router import router as admin_router
 from app.modules.ai.router import router as ai_router
 from app.modules.journal.router import router as journal_router
-from app.modules.dev.router import router as dev_router
 
 api_v1_router = APIRouter(prefix="/api/v1")
 
@@ -30,7 +29,6 @@ api_v1_router.include_router(news_router)
 api_v1_router.include_router(auth_router)
 api_v1_router.include_router(admin_router)
 api_v1_router.include_router(ai_router)
-api_v1_router.include_router(dev_router)
 
 @api_v1_router.get("/health", tags=["Health"])
 async def api_health_check():
