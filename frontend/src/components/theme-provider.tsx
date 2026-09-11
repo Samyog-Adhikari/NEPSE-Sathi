@@ -27,59 +27,47 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = React.createContext<ThemeProviderState>(initialState);
 
+function useSystemTheme(): "dark" | "light" {
+  const subscribe = React.useCallback((callback: () => void) => {
+    if (typeof window === "undefined") return () => {};
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", callback);
+    return () => mq.removeEventListener("change", callback);
+  }, []);
+
+  const getSnapshot = React.useCallback(() => {
+    if (typeof window === "undefined") return "light";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }, []);
+
+  const getServerSnapshot = React.useCallback(() => "light" as const, []);
+
+  return React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "nepse-theme",
-  ...props
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = React.useState<Theme>(defaultTheme);
-  const [resolvedTheme, setResolvedTheme] = React.useState<"dark" | "light">("light");
+  const systemTheme = useSystemTheme();
 
-  React.useEffect(() => {
+  const [theme, setThemeState] = React.useState<Theme>(() => {
+    if (typeof window === "undefined") return defaultTheme;
     try {
-      const stored = localStorage.getItem(storageKey) as Theme | null;
-      if (stored) {
-        setThemeState(stored);
-      }
+      return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
     } catch {
-      // ignore
+      return defaultTheme;
     }
-  }, [storageKey]);
+  });
+
+  const resolvedTheme: "dark" | "light" = theme === "system" ? systemTheme : theme;
 
   React.useEffect(() => {
     const root = document.documentElement;
     root.classList.remove("light", "dark");
-
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-      root.classList.add(systemTheme);
-      setResolvedTheme(systemTheme);
-      return;
-    }
-
-    root.classList.add(theme);
-    setResolvedTheme(theme);
-  }, [theme]);
-
-  // Listen for system theme changes when in system mode
-  React.useEffect(() => {
-    if (theme !== "system") return;
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = () => {
-      const systemTheme = mediaQuery.matches ? "dark" : "light";
-      const root = document.documentElement;
-      root.classList.remove("light", "dark");
-      root.classList.add(systemTheme);
-      setResolvedTheme(systemTheme);
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme]);
+    root.classList.add(resolvedTheme);
+  }, [resolvedTheme]);
 
   const value = React.useMemo(
     () => ({

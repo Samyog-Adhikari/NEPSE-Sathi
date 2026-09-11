@@ -25,16 +25,16 @@ export function BentoFeatures({ locale = "en" }: BentoFeaturesProps) {
 
   const features = [
     {
-      title: isNepali ? "वास्तविक समय फ्लोरशीट र ब्रोकर एनालिटिक्स" : "Real-Time Floorsheet & Broker Flow",
+      title: isNepali ? "प्रत्यक्ष फ्लोरशीट र ब्रोकर एनालिटिक्स" : "Live Floorsheet & Broker Analytics",
       description: isNepali
         ? "शीर्ष ५० ब्रोकरहरूको खरीद-बिक्री प्रवाह, संकलन र वितरण ढाँचाहरू तत्काल ट्र्याक गर्नुहोस्।"
         : "Track top broker buy/sell flows, accumulation zones, and institutional distribution patterns with live floor feed.",
       icon: Activity,
-      tag: isNepali ? "प्रत्यक्ष डाटा" : "Live Stream",
+      tag: isNepali ? "संस्थागत संकलन" : "Smart Money",
       href: `/${locale}/floorsheet`,
     },
     {
-      title: isNepali ? "एआई मार्केट आउटलुक र प्राविधिक विश्लेषण" : "AI Market Outlook & Technical Intelligence",
+      title: isNepali ? "एआई प्राविधिक विश्लेषण र बजार आउटलुक" : "AI Technical Intelligence & Outlook",
       description: isNepali
         ? "नेपाल राष्ट्र बैंक र सेबोन नीतिहरूको सन्दर्भमा प्राविधिक सूचकहरू (RSI, MACD, EMA) को स्वचालित एआई व्याख्या।"
         : "Automated multi-model AI synthesis of NEPSE technicals, momentum indicators, and macro sector signals.",
@@ -43,21 +43,21 @@ export function BentoFeatures({ locale = "en" }: BentoFeaturesProps) {
       href: `/${locale}/ai`,
     },
     {
-      title: isNepali ? "स्मार्ट पोर्टफोलियो र स्वचालित ट्रेड जर्नल" : "Smart Portfolio & Trade Journal",
+      title: isNepali ? "स्मार्ट WACC, लाभांश र कर व्यवस्थापन" : "Smart WACC, Dividends & CGT Ledger",
       description: isNepali
-        ? "आफ्नो नाफा-नोक्सान, लाभांश प्रतिफल, र स्टप-लस स्तरहरू स्वचालित रूपमा व्यवस्थापन गर्नुहोस्।"
+        ? "आफ्नो नाफा-नोक्सान, लाभांश प्रतिफल, WACC र पूँजीगत लाभकर स्वचालित रूपमा व्यवस्थापन गर्नुहोस्।"
         : "Automate realized/unrealized PnL, dividend yields, WACC calculations, and disciplined trade execution notes.",
       icon: PieChart,
-      tag: isNepali ? "व्यवस्थापन" : "Portfolio",
+      tag: isNepali ? "सटीक हिसाब" : "Exact Accounting",
       href: `/${locale}/portfolio`,
     },
     {
-      title: isNepali ? "आईपीओ हब र नतिजा जाँच" : "IPO Hub & Rapid Allotment Checker",
+      title: isNepali ? "आईपीओ हब र सामूहिक नतिजा जाँच" : "IPO Hub & Bulk BOID Checker",
       description: isNepali
-        ? "आगामी साधारण सेयर, हकप्रद, र ऋणपत्रहरूको समयतालिका र एक क्लिकमा नतिजा हेर्ने सुविधा।"
-        : "Real-time IPO pipeline tracker, issue calendar, premium debenture alerts, and instant bulk allotment checker.",
+        ? "आगामी साधारण सेयर, हकप्रद, र ऋणपत्रहरूको समयतालिका र एकै क्लिकमा परिवारका सबै डिम्याटको नतिजा हेर्ने सुविधा।"
+        : "Real-time IPO pipeline tracker, issue calendar, premium debenture alerts, and instant bulk family allotment checker.",
       icon: Layers,
-      tag: isNepali ? "आईपीओ" : "IPO Center",
+      tag: isNepali ? "सामूहिक नतिजा" : "1-Click Bulk",
       href: `/${locale}/ipo`,
     },
   ];

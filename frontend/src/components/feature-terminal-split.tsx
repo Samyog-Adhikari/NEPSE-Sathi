@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import {
-  TrendingUp,
   CheckCircle2,
   Home,
   BarChart3,
@@ -10,7 +9,6 @@ import {
   PieChart,
   FileText,
   Settings,
-  Sparkles,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";

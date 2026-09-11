@@ -4,12 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import {
   Activity,
-  BarChart3,
   PieChart,
   Layers,
   ArrowRight,
-  TrendingUp,
-  LineChart,
+  Sparkles,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,83 +23,83 @@ export function DetailedFeaturesSection({ locale = "en" }: DetailedFeaturesSecti
 
   const features = [
     {
-      badge: isNepali ? "फ्लोरशीट इन्टेलिजेन्स" : "Live Floor Intelligence",
-      title: isNepali ? "वास्तविक समय फ्लोरशीट र ब्रोकर एनालिटिक्स" : "Real-Time Floorsheet & Broker Analytics",
+      badge: isNepali ? "संस्थागत संकलन ट्र्याकर" : "Smart Money Tracker",
+      title: isNepali ? "प्रत्यक्ष फ्लोरशीट र ब्रोकर एनालिटिक्स" : "Live Floorsheet & Broker Analytics",
       description: isNepali
-        ? "नेपालका ब्रोकरहरूको खरीद-बिक्री प्रवाह, ठूला कारोबार (Bulk Trades), र संस्थागत संकलन/वितरण ढाँचाहरू तत्काल पहिचान गर्नुहोस्।"
+        ? "नेपालका सम्पूर्ण ब्रोकरहरूको खरीद-बिक्री प्रवाह, ठूला कारोबार (Bulk Trades), र संस्थागत संकलन/वितरण ढाँचाहरू तत्काल पहिचान गर्नुहोस्।"
         : "Detect institutional accumulation and distribution patterns across registered broker houses with live transaction data and volume momentum.",
       points: isNepali
         ? [
-            "ब्रोकरहरूको दैनिक खरिद-बिक्री सारांश",
-            "ठूला कारोबारहरूको प्रत्यक्ष ट्र्याकिङ",
+            "शीर्ष ५० ब्रोकरहरूको दैनिक खरिद-बिक्री सारांश",
+            "ठूला अर्डर (Bulk Block Deals) को प्रत्यक्ष ट्र्याकिङ",
             "ऐतिहासिक ब्रोकर होल्डिङ विश्लेषण",
           ]
         : [
-            "Broker holding & turnover breakdown",
+            "Top 50 broker holding & turnover breakdown",
             "Real-time bulk deal & block trade tracking",
             "Historical accumulation vs distribution analysis",
           ],
-      href: `/${locale}/features#floorsheet`,
+      href: `/${locale}/features`,
       icon: Activity,
     },
     {
-      badge: isNepali ? "प्राविधिक विश्लेषण" : "Automated Technicals",
-      title: isNepali ? "प्राविधिक विश्लेषण र बजार दृष्टिकोण" : "Technical Analysis & Market Outlook",
+      badge: isNepali ? "एआई-सञ्चालित आउटलुक" : "Multi-Model AI",
+      title: isNepali ? "एआई प्राविधिक विश्लेषण र बजार आउटलुक" : "AI Technical Intelligence & Outlook",
       description: isNepali
-        ? "प्राविधिक सूचकहरू (RSI, MACD, Moving Averages) को स्वचालित विश्लेषण, प्रमुख समर्थन र अवरोध स्तरहरू स्पष्ट बुझ्नुहोस्।"
+        ? "प्राविधिक सूचकहरू (RSI, MACD, EMA Ribbons) को स्वचालित विश्लेषण, प्रमुख समर्थन र अवरोध स्तरहरू स्पष्ट बुझ्नुहोस्।"
         : "Automated indicator synthesis evaluating momentum, trend strength, moving averages, and critical support and resistance levels.",
       points: isNepali
         ? [
-            "प्राविधिक सूचकहरूको स्पष्ट व्याख्या",
+            "स्वचालित EMA रिबन र प्राविधिक सूचक",
             "बजार सेन्टिमेन्ट र मोमेन्टम स्कोर",
             "समर्थन (Support) र अवरोध (Resistance) स्तरहरू",
           ]
         : [
-            "Clear technical momentum indicators",
+            "EMA 20/50/200 multi-timeframe ribbons",
             "Daily sentiment score & trend ratings",
             "Dynamic support, resistance, and pivot levels",
           ],
-      href: `/${locale}/features#technicals`,
-      icon: LineChart,
+      href: `/${locale}/features`,
+      icon: Sparkles,
     },
     {
-      badge: isNepali ? "पोर्टफोलियो व्यवस्थापन" : "Portfolio Tracking",
-      title: isNepali ? "स्मार्ट पोर्टफोलियो र ट्रेड जर्नल" : "Smart Portfolio & Trade Journal",
+      badge: isNepali ? "सटीक हिसाब र कर" : "Exact Accounting & CGT",
+      title: isNepali ? "स्मार्ट WACC, लाभांश र कर व्यवस्थापन" : "Smart WACC, Dividends & CGT Ledger",
       description: isNepali
-        ? "आफ्नो सम्पूर्ण लगानीलाई एउटै ड्यासबोर्डमा व्यवस्थित गर्नुहोस्। WACC, पूँजीगत लाभकर (CGT) र लाभांश प्रतिफलको स्वचालित हिसाब राख्नुहोस्।"
+        ? "आफ्नो सम्पूर्ण लगानीलाई एउटै ड्यासबोर्डमा व्यवस्थित गर्नुहोस्। WACC, पूँजीगत लाभकर (CGT ५%/७.५%) र लाभांश प्रतिफलको स्वचालित हिसाब राख्नुहोस्।"
         : "Consolidate all equity holdings with automated WACC recalculations, dividend yields, capital gains estimates, and trade logging.",
       points: isNepali
         ? [
             "वास्तविक र अवास्तविक नाफा-नोक्सान ट्र्याकर",
             "लाभांश र हकप्रद सेयरको स्वचालित हिसाब",
-            "ट्रेडिङ कारण र डायरी रेकर्डिङ सुविधा",
+            "पूँजीगत लाभकर (CGT ५%/७.५%) को सटीक गणना",
           ]
         : [
             "Realized vs Unrealized PnL with WACC calculation",
             "Automated dividend yield & bonus share ledger",
-            "Trade execution notes and discipline logging",
+            "Exact Capital Gains Tax (5% / 7.5%) breakdown",
           ],
-      href: `/${locale}/features#portfolio`,
+      href: `/${locale}/features`,
       icon: PieChart,
     },
     {
-      badge: isNepali ? "प्राथमिक बजार" : "Primary Market",
-      title: isNepali ? "आईपीओ हब र नतिजा जाँच" : "IPO Hub & Rapid Allotment Checker",
+      badge: isNepali ? "१-क्लिक सामूहिक नतिजा" : "1-Click Bulk Checker",
+      title: isNepali ? "आईपीओ हब र सामूहिक नतिजा जाँच" : "IPO Hub & Bulk BOID Checker",
       description: isNepali
         ? "आगामी साधारण सेयर (IPO), हकप्रद, ऋणपत्र र म्युचुअल फण्डहरूको पूर्ण समयतालिका र एकैपटक धेरै डिम्याट खाताहरूको नतिजा हेर्ने सुविधा।"
         : "Complete pipeline tracking for ordinary shares, right shares, debentures, and mutual funds, plus bulk BOID allotment verification.",
       points: isNepali
         ? [
             "आगामी र सक्रिय निष्कासनहरूको क्यालेन्डर",
-            "पाइपलाइन स्वीकृति स्थिति",
+            "सेबोन स्वीकृति पाइपलाइन स्थिति",
             "एकै क्लिकमा परिवारका सबै खाताको नतिजा जाँच",
           ]
         : [
             "Upcoming & ongoing issue calendar",
-            "Regulatory pipeline status tracking",
+            "SEBON regulatory pipeline status tracking",
             "1-click bulk BOID allotment result verification",
           ],
-      href: `/${locale}/features#ipo`,
+      href: `/${locale}/features`,
       icon: Layers,
     },
   ];

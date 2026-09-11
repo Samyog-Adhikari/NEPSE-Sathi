@@ -9,8 +9,8 @@ interface CheckResult {
   status: number;
   durationMs: number;
   passed: boolean;
-  data: any;
-  error?: any;
+  data: unknown;
+  error?: unknown;
 }
 
 export default function ApiCheckPage() {
@@ -22,7 +22,7 @@ export default function ApiCheckPage() {
     title: string,
     endpoint: string,
     method = "GET",
-    body?: any,
+    body?: unknown,
     expectedStatus = 200
   ) {
     setLoading(key);
