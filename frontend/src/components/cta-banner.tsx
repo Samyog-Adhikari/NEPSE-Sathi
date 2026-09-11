@@ -8,13 +8,15 @@ import { cn } from "@/lib/utils";
 
 interface CtaBannerProps {
   locale?: string;
+  className?: string;
+  noPadding?: boolean;
 }
 
-export function CtaBanner({ locale = "en" }: CtaBannerProps) {
+export function CtaBanner({ locale = "en", className, noPadding = false }: CtaBannerProps) {
   const isNepali = locale === "ne";
 
   return (
-    <section className="py-12 sm:py-16 px-4 sm:px-6 max-w-6xl mx-auto">
+    <section className={cn(!noPadding && "py-12 sm:py-16 px-4 sm:px-6 max-w-6xl mx-auto", className)}>
       <div className="relative rounded-3xl border border-emerald-500/20 bg-gradient-to-r from-emerald-50/80 via-emerald-100/30 to-background dark:from-emerald-950/20 dark:via-background dark:to-background p-8 sm:p-12 overflow-hidden shadow-lg flex flex-col md:flex-row items-center justify-between gap-8">
         {/* Background Trend Graphic Accent */}
         <div className="absolute right-8 -bottom-6 opacity-15 dark:opacity-10 pointer-events-none">

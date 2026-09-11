@@ -1,11 +1,14 @@
 # NEPSE Insight — Agent Execution Playbook
 
-> **STATUS UPDATE (Backend Completed & Verified):**
-> All backend implementation and architecture requirements up to and including the backend are **100% COMPLETED and verified live against Supabase**:
-> - Autonomous Scraping Pipeline (Stocks, Indices, Floorsheet, Brokers, IPO, News) with market hours & holiday awareness.
-> - Swappable `MarketDataProvider` abstraction layer (§13.1).
-> - All 14 Domain Modules (Market, Stocks, Technicals, IPO, News, Floorsheet, Brokers, Portfolio with CSV Import/Export, Watchlist, Journal with Paper Trading, AI Outlook, Bilingual RAG Explainer, Auth, Admin).
-> - Next focus is the Next.js Frontend UI (Phase 2 / Phase 3).
+> **STATUS UPDATE (Frontend Phase 2 & Phase 3 COMPLETED):**
+> - **Backend (100% Completed & Verified)**: Autonomous scraping pipeline, `MarketDataProvider`, all 14 domain modules live against Supabase.
+> - **Frontend Phase 2 (Completed)**: Theme system, design tokens, dark/light mode, mobile navigation, responsive layouts, unified CTA banners, and brand logo sizing.
+> - **Frontend Phase 3 (Completed)**:
+>   - Public marketing & informational pages (Home, Features, About Us with alternating rhythm, Contact with FAQ anchor, Terms, Privacy).
+>   - Supabase Auth: Split-pane Login & Register pages matching the design mockup, Google OAuth integration, password recovery, route protection.
+>   - Full bilingual support (`/en` and `/ne`) with language switcher.
+> - **CURRENT ACTIVE FOCUS: Phase 4 (User Dashboard & Core Features)**:
+>   - Building the interactive User Dashboard (`/dashboard`), Market Overview (`/market`), Stock Analysis (`/stocks`), Floorsheet (`/floorsheet`), and Portfolio tools, followed by the Admin Panel (`/admin`).
 
 > **Companion document:** `BLUEPRINT_CHECKS.md` — this file tells the agent *what order to do things in and when to stop*; `BLUEPRINT_CHECKS.md` tells it *exactly how* to build each piece (code patterns, schemas, security checklists, module reference). Every phase below points back to specific sections of `BLUEPRINT_CHECKS.md`. Read `BLUEPRINT_CHECKS.md` in full before Phase 0. `BLUEPRINT_CHECKS.md` is now self-contained — it was originally formalized from `prd.md`/`trd.md`, which have since been removed; do not treat this playbook as depending on files that no longer exist.
 

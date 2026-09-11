@@ -45,15 +45,15 @@ export function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10">
           {/* Brand Column */}
           <div className="lg:col-span-4 space-y-4">
-            <Link href={`/${locale}`} className="flex items-center gap-2.5">
+            <Link href={`/${locale}`} className="flex items-center gap-3">
               <Image
                 src="/logo.png"
                 alt="NEPSE Sathi Logo"
-                width={32}
-                height={32}
-                className="w-8 h-8 object-contain"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-contain"
               />
-              <span className="font-bold text-base tracking-tight text-foreground">
+              <span className="font-bold text-lg tracking-tight text-foreground">
                 NEPSE<span className="text-emerald-600 dark:text-emerald-400 font-extrabold">Sathi</span>
               </span>
             </Link>

@@ -9,12 +9,12 @@
 > **Provenance:** This blueprint was originally formalized from `prd.md` (v1.0, 26 Aug 2026) and `trd.md` (v2). Those two files have since been removed/consolidated — this document is now the single, self-contained source of truth for implementation (schemas, endpoints, business rules, and security checklists are all inlined below with `PRD §x` / `TRD §x` citations kept only as historical traceability markers, not as pointers to files that still need to exist). Do not re-create `prd.md`/`trd.md` unless the person explicitly asks for them back.
 > **Mobile note:** Capacitor conversion is a **final-stage, one-time step** — see §16. Build and ship the web app first; §16 exists so that step doesn't require a rewrite when you get there, not so you build both in parallel now.
 >
-> **STATUS UPDATE (Backend Completed & Verified):**
-> All backend implementation and architectural requirements up to and including the backend are **100% COMPLETED and verified live against Supabase**:
-> - Autonomous Scraping Pipeline (Stocks, Indices, Floorsheet, Brokers, IPO, News) with market hours & holiday awareness.
-> - Swappable `MarketDataProvider` abstraction layer (§13.1).
-> - All 14 Domain Modules (§4, §5, §11, §13): Market, Stocks, Technicals, IPO, News, Floorsheet, Brokers, Portfolio with CSV Import/Export, Watchlist, Journal with Paper Trading, AI Outlook, Bilingual RAG Explainer, Auth, Admin.
-> - Next focus is the Next.js Frontend UI.
+> **STATUS UPDATE (Frontend Phase 2 & Phase 3 COMPLETED):**
+> - **Backend (100% Completed & Verified)**: Autonomous scraping pipeline, `MarketDataProvider`, all 14 domain modules live against Supabase.
+> - **Frontend Phase 2 (Completed)**: Theme system, design tokens, dark/light mode, mobile navigation, responsive layouts, unified CTA banners, and brand logo sizing.
+> - **Frontend Phase 3 (Completed)**: Public pages (Home, Features, About, Contact with FAQ anchor, Terms, Privacy) and Supabase Auth with Google OAuth, password recovery, and route protection.
+> - **CURRENT ACTIVE FOCUS: Phase 4 (User Dashboard & Core Features)**:
+>   - Building the interactive User Dashboard (`/dashboard`), Market Overview (`/market`), Stock Analysis (`/stocks`), Floorsheet (`/floorsheet`), and Portfolio tools, followed by the Admin Panel (`/admin`).
 
 ---
 

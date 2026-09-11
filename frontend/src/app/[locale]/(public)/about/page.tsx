@@ -9,19 +9,17 @@ import {
   TrendingUp,
   Sprout,
   Users,
-  Code2,
-  Palette,
   BarChart3,
-  Headphones,
+  Lightbulb,
+  Heart,
   MapPin,
   CheckCircle2,
   Shield,
   GraduationCap,
-  Sparkles,
   Target,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { CtaBanner } from "@/components/cta-banner";
 import { cn } from "@/lib/utils";
 
 export default function AboutPage() {
@@ -157,11 +155,46 @@ export default function AboutPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. OUR MISSION — "Democratizing Stock Market Knowledge in Nepal."         */}
+      {/* 2. OUR MISSION — Alternating Layout (Image Left, Narrative Right)          */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
-        {/* Left: Text */}
-        <div className="lg:col-span-5 space-y-5">
+        {/* Left: App Preview photo with overlapping Goal card */}
+        <div className="lg:col-span-7 relative order-2 lg:order-1">
+          {/* Main App Mockup Image Container */}
+          <div className="relative w-full aspect-[16/10] rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-muted group">
+            <Image
+              src="/images/about/app-mockup.jpg"
+              alt="NEPSE Sathi App Dashboard on Laptop and Mobile"
+              fill
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+            {/* Soft border gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-transparent pointer-events-none" />
+          </div>
+
+          {/* Overlapping Goal Quote Card on Image */}
+          <div className="mt-4 sm:mt-0 sm:absolute sm:-bottom-6 sm:-right-4 md:-right-6 rounded-2xl border border-white/40 dark:border-white/10 bg-card/95 dark:bg-card/90 backdrop-blur-md p-4 sm:p-5 shadow-2xl space-y-2.5 max-w-xs transition-transform hover:-translate-y-1">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <Target className="w-4 h-4" />
+            </div>
+            <p className="text-xs sm:text-sm text-foreground/90 font-medium leading-relaxed">
+              {isNepali
+                ? "हाम्रो लक्ष्य सरल छ — प्रत्येक नेपाली लगानीकर्तालाई सही समयमा सही जानकारी दिएर सशक्त बनाउनु।"
+                : "Our goal is simple — empower every Nepali investor with the right information at the right time."}
+            </p>
+            <Link
+              href={`/${locale}/features`}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:translate-x-1 transition-transform group"
+            >
+              <span>{isNepali ? "सुविधाहरू हेर्नुहोस्" : "Explore Features"}</span>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Right: Text Narrative */}
+        <div className="lg:col-span-5 space-y-5 order-1 lg:order-2">
           <Badge
             variant="outline"
             className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1.5 shadow-xs"
@@ -217,58 +250,19 @@ export default function AboutPage() {
             </svg>
           </div>
         </div>
-
-        {/* Right: App Preview photo with overlapping Goal card */}
-        <div className="lg:col-span-7 relative">
-          {/* Main App Mockup Image Container */}
-          <div className="relative w-full aspect-[16/10] rounded-3xl overflow-hidden border border-border/80 shadow-2xl bg-muted group">
-            <Image
-              src="/images/about/app-mockup.jpg"
-              alt="NEPSE Sathi App Dashboard on Laptop and Mobile"
-              fill
-              sizes="(max-width: 1024px) 100vw, 55vw"
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            {/* Soft border gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-transparent pointer-events-none" />
-          </div>
-
-          {/* Overlapping Goal Quote Card */}
-          <div className="mt-4 sm:mt-0 sm:absolute sm:-bottom-6 sm:-right-4 md:-right-6 rounded-2xl border border-white/40 dark:border-white/10 bg-card/95 dark:bg-card/90 backdrop-blur-md p-4 sm:p-5 shadow-2xl space-y-2.5 max-w-xs transition-transform hover:-translate-y-1">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <Target className="w-4 h-4" />
-            </div>
-            <p className="text-xs sm:text-sm text-foreground/90 font-medium leading-relaxed">
-              {isNepali
-                ? "हाम्रो लक्ष्य सरल छ — प्रत्येक नेपाली लगानीकर्तालाई सही समयमा सही जानकारी दिएर सशक्त बनाउनु।"
-                : "Our goal is simple — empower every Nepali investor with the right information at the right time."}
-            </p>
-            <Link
-              href={`/${locale}/features`}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:translate-x-1 transition-transform group"
-            >
-              <span>{isNepali ? "सुविधाहरू हेर्नुहोस्" : "Explore Features"}</span>
-              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </div>
-        </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. OUR VALUES — "What Drives Us"                                          */}
+      {/* 3. OUR VALUES — "What Drives Us" (Exact Match to Mockup Design)            */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
         {/* Left text */}
         <div className="lg:col-span-4 space-y-4">
-          <Badge
-            variant="outline"
-            className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1.5 shadow-xs"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>{isNepali ? "हाम्रा मूल्यहरू" : "Our Values"}</span>
-          </Badge>
+          <div className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400">
+            {isNepali ? "हाम्रा मूल्यहरू" : "Our Values"}
+          </div>
 
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground leading-tight">
             {isNepali ? "हामीलाई के चलाउँछ" : "What Drives Us"}
           </h2>
 
@@ -280,7 +274,7 @@ export default function AboutPage() {
         </div>
 
         {/* Right: 2x2 values grid */}
-        <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
           {[
             {
               icon: Shield,
@@ -300,32 +294,34 @@ export default function AboutPage() {
               icon: Users,
               title: isNepali ? "समुदाय" : "Community",
               description: isNepali
-                ? "नेपाली लगानीकर्ताहरू बीच सहकार्य र साझा वृद्धि प्रवर्द्धन।"
-                : "Fostering collaboration and shared growth across Nepali traders.",
+                ? "सहयोगी लगानीकर्ता समुदायसँग सँगै बढ्दै।"
+                : "Growing together with a supportive investor community.",
             },
             {
-              icon: Sparkles,
+              icon: TrendingUp,
               title: isNepali ? "नवप्रवर्तन" : "Innovation",
               description: isNepali
-                ? "नेपालको बजारका लागि विशेष रूपमा तयार गरिएको अत्याधुनिक प्रविधि।"
-                : "State-of-the-art AI technology tailored for Nepal's market mechanics.",
+                ? "तपाईंलाई उत्कृष्ट उपकरण र सुविधाहरू दिन निरन्तर सुधार गर्दै।"
+                : "Constantly improving to bring you the best tools and features.",
             },
           ].map((v) => {
             const Icon = v.icon;
             return (
               <div
                 key={v.title}
-                className="group rounded-2xl border border-border/80 bg-card/60 dark:bg-card/40 hover:bg-card hover:border-emerald-500/40 p-5 sm:p-6 transition-all duration-200 shadow-sm hover:shadow-md space-y-3"
+                className="group rounded-3xl border border-border/80 bg-card/60 dark:bg-card/40 hover:bg-card hover:border-emerald-500/40 p-5 sm:p-6 transition-all duration-200 shadow-xs hover:shadow-md flex items-start gap-4"
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                   <Icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-base font-bold text-foreground">
-                  {v.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  {v.description}
-                </p>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-foreground">
+                    {v.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    {v.description}
+                  </p>
+                </div>
               </div>
             );
           })}
@@ -333,114 +329,168 @@ export default function AboutPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. JOURNEY STATS BANNER                                                   */}
+      {/* 4. OUR JOURNEY BANNER — "Making an Impact" (Exact Match to Mockup Design)  */}
       {/* ========================================================================= */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 text-white p-8 sm:p-12 shadow-2xl border border-emerald-800/40">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-6 text-center">
-          {[
-            {
-              value: "99.8%",
-              label: isNepali ? "डाटा विश्वसनीयता" : "Data Uptime",
-              desc: isNepali ? "अविरल बजार फिड" : "Continuous market feed",
-            },
-            {
-              value: "10M+",
-              label: isNepali ? "विश्लेषण गरिएका क्यान्डलहरू" : "Candles Analyzed",
-              desc: isNepali ? "ऐतिहासिक NEPSE रेकर्ड" : "Historical NEPSE records",
-            },
-            {
-              value: "< 50ms",
-              label: isNepali ? "स्ट्रिमिङ गति" : "Streaming Latency",
-              desc: isNepali ? "द्रुत WebSocket अपडेट" : "Real-time WebSocket engine",
-            },
-            {
-              value: "100%",
-              label: isNepali ? "नेपालका लागि" : "Made for Nepal",
-              desc: isNepali ? "स्थानीय बजार समर्पित" : "Tailored for NEPSE traders",
-            },
-          ].map((stat) => (
-            <div key={stat.label} className="space-y-1.5">
-              <div className="text-2xl sm:text-4xl font-black text-emerald-300 font-mono tracking-tight">
-                {stat.value}
-              </div>
-              <div className="text-xs sm:text-sm font-bold text-white/90">
-                {stat.label}
-              </div>
-              <div className="text-[11px] text-emerald-200/70 hidden sm:block">
-                {stat.desc}
-              </div>
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#06241b] via-[#093126] to-[#06241b] text-white p-6 sm:p-10 shadow-2xl border border-emerald-800/40">
+        {/* Subtle mountain backdrop overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/15 via-transparent to-transparent pointer-events-none" />
+
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center">
+          {/* Left Narrative */}
+          <div className="lg:col-span-5 space-y-2">
+            <div className="text-xs sm:text-sm font-semibold text-emerald-400">
+              {isNepali ? "हाम्रो यात्रा" : "Our Journey"}
             </div>
-          ))}
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              {isNepali ? "सकारात्मक प्रभाव पार्दै" : "Making an Impact"}
+            </h2>
+            <p className="text-xs sm:text-sm text-white/80 leading-relaxed max-w-sm">
+              {isNepali
+                ? "हामी भर्खरै सुरु गर्दैछौं, तर प्रयोगकर्ताहरूको विश्वास र साथ हाम्रो लागि ठूलो प्रेरणा हो।"
+                : "We're just getting started, but the support and trust from our users already mean a lot."}
+            </p>
+          </div>
+
+          {/* Right 4 Stats Grid with Divider Lines */}
+          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-2">
+            {[
+              {
+                value: "10K+",
+                label: isNepali ? "सक्रिय प्रयोगकर्ता" : "Active Users",
+                tag: isNepali ? "(चाँडै आउँदैछ)" : "(Coming Soon)",
+              },
+              {
+                value: "4.8 ★",
+                label: isNepali ? "प्रयोगकर्ता मूल्याङ्कन" : "User Rating",
+                tag: isNepali ? "(चाँडै आउँदैछ)" : "(Coming Soon)",
+              },
+              {
+                value: "1M+",
+                label: isNepali ? "बजार डाटा पोइन्टहरू" : "Market Data Points",
+                tag: isNepali ? "(चाँडै आउँदैछ)" : "(Coming Soon)",
+              },
+              {
+                value: "100%",
+                label: isNepali ? "नेपाल केन्द्रित" : "Nepal Focused",
+                tag: isNepali ? "(सधैं)" : "(Always)",
+              },
+            ].map((stat, idx) => (
+              <div
+                key={stat.label}
+                className={cn(
+                  "space-y-1 py-1",
+                  idx > 0 && "sm:border-l sm:border-white/15 sm:pl-4"
+                )}
+              >
+                <div className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight">
+                  {stat.value}
+                </div>
+                <div className="text-xs font-semibold text-white/95">
+                  {stat.label}
+                </div>
+                <div className="text-[11px] text-white/50">
+                  {stat.tag}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 5. TEAM & DISCIPLINES                                                     */}
+      {/* 5. OUR TEAM — "Passionate People, Real Purpose." (Exact Match to Mockup)   */}
       {/* ========================================================================= */}
-      <div className="space-y-8">
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <Badge
-            variant="outline"
-            className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1.5 shadow-xs"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>{isNepali ? "हाम्रो टोली" : "Built With Passion"}</span>
-          </Badge>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            {isNepali ? "इन्जिनियरिङ र अनुसन्धान" : "Engineering & Quantitative Research"}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+        {/* Left text & Our Story button */}
+        <div className="lg:col-span-4 space-y-4">
+          <div className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400">
+            {isNepali ? "हाम्रो टोली" : "Our Team"}
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground leading-tight">
+            {isNepali ? (
+              <>
+                समर्पित व्यक्तिहरू,
+                <br />
+                वास्तविक उद्देश्य।
+              </>
+            ) : (
+              <>
+                Passionate People,
+                <br />
+                Real Purpose.
+              </>
+            )}
           </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
             {isNepali
-              ? "नेपाली बजारलाई राम्ररी बुझ्ने प्राविधिक र वित्तीय विश्लेषकहरूको समर्पित टोली।"
-              : "A dedicated multidisciplinary team passionate about building Nepal's premier financial intelligence stack."}
+              ? "हामी विद्यार्थी, विकासकर्ता र उत्साहीहरूको एउटा सानो टोली हौं जसले प्रविधिको शक्तिमा विश्वास गर्छौं। NEPSE Sathi स्मार्ट र बलियो नेपाल निर्माणमा हाम्रो सानो योगदान हो।"
+              : "We're a small team of students, developers, and enthusiasts who believe in the power of technology to create real change. NEPSE Sathi is our way of contributing to a smarter and stronger Nepal."}
           </p>
+          <div className="pt-2">
+            <Link
+              href={`/${locale}/features`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-emerald-500/50 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+            >
+              <span>{isNepali ? "हाम्रो कथा" : "Our Story"}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Right: 4 Horizontal Disciplines Cards with Soft Pastel Squircles */}
+        <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             {
-              role: isNepali ? "क्वान्टिटेटिभ अनुसन्धान" : "Quantitative Modeling",
+              role: isNepali ? "विकासकर्ताहरू" : "Developers",
+              desc: isNepali
+                ? "सहज र भरपर्दो अनुभव निर्माण गर्दै।"
+                : "Building a seamless and reliable experience.",
+              icon: Users,
+              bg: "bg-emerald-100/90 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400",
+            },
+            {
+              role: isNepali ? "डिजाइनरहरू" : "Designers",
+              desc: isNepali
+                ? "सफा र सहज इन्टरफेस सिर्जना गर्दै।"
+                : "Crafting a clean and intuitive interface.",
+              icon: Lightbulb,
+              bg: "bg-emerald-100/90 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400",
+            },
+            {
+              role: isNepali ? "अनुसन्धानकर्ताहरू" : "Researchers",
+              desc: isNepali
+                ? "तथ्याङ्कलाई अर्थपूर्ण अन्तरदृष्टिमा रूपान्तरण गर्दै।"
+                : "Turning data into meaningful insights.",
               icon: BarChart3,
-              desc: isNepali
-                ? "LSTM र XGBoost मोडेलहरू NEPSE मूल्य चाल भविष्यवाणी गर्न।"
-                : "Predictive neural networks & technical anomaly detection for NEPSE.",
+              bg: "bg-sky-100/90 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400",
             },
             {
-              role: isNepali ? "वितरित प्रणाली" : "Full-Stack Architecture",
-              icon: Code2,
+              role: isNepali ? "सहयोग" : "Support",
               desc: isNepali
-                ? "द्रुत डेटा इन्जेसन, क्यासिङ, र वास्तविक समय WebSocket स्ट्रिमिङ।"
-                : "High-throughput data pipelines, caching, and low-latency WebSockets.",
-            },
-            {
-              role: isNepali ? "उत्पादन डिजाइन" : "Product & Data Viz",
-              icon: Palette,
-              desc: isNepali
-                ? "ट्रेडिङभ्यू-ग्रेड अन्तरक्रियात्मक चार्टिङ र सहज नेपाली यूआई।"
-                : "TradingView-grade charting, responsive UI, and intuitive visual cues.",
-            },
-            {
-              role: isNepali ? "समुदाय र समर्थन" : "Community & Support",
-              icon: Headphones,
-              desc: isNepali
-                ? "लगानीकर्ता प्रतिक्रिया संकलन र निरन्तर सहायता सेवा।"
-                : "Direct trader feedback loops, educational guides, and platform support.",
+                ? "तपाईंका प्रश्नहरूका लागि सधैं तयार।"
+                : "Always here for your questions.",
+              icon: Heart,
+              bg: "bg-purple-100/90 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400",
             },
           ].map((member) => {
             const Icon = member.icon;
             return (
               <div
                 key={member.role}
-                className="group rounded-2xl border border-border/80 bg-card p-5 sm:p-6 space-y-3 hover:border-emerald-500/40 hover:shadow-md transition-all duration-200"
+                className="group rounded-3xl border border-border/70 bg-card p-5 space-y-3 hover:border-emerald-500/40 hover:shadow-md transition-all duration-200"
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <div
+                  className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs",
+                    member.bg
+                  )}
+                >
                   <Icon className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-bold text-foreground">
                   {member.role}
                 </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
                   {member.desc}
                 </p>
               </div>
@@ -450,44 +500,9 @@ export default function AboutPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 6. CALL TO ACTION                                                         */}
+      {/* 6. CALL TO ACTION (Reused Home Page Component)                            */}
       {/* ========================================================================= */}
-      <div className="rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-emerald-500/10 to-transparent p-8 sm:p-12 text-center space-y-6">
-        <div className="max-w-xl mx-auto space-y-3">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground">
-            {isNepali
-              ? "स्मार्ट लगानीको यात्रा आजै सुरु गर्नुहोस्"
-              : "Start Your Smarter Trading Journey Today"}
-          </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            {isNepali
-              ? "NEPSE Sathi का शक्तिशाली सुविधाहरू प्रयोग गरी आफ्नो पोर्टफोलियो सुरक्षित र लाभदायक बनाउनुहोस्।"
-              : "Experience AI predictions, floor sheet analytics, and real-time market depth built specifically for NEPSE."}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href={`/${locale}/register`}
-            className={cn(
-              buttonVariants({ size: "lg" }),
-              "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25 px-6 font-semibold"
-            )}
-          >
-            {isNepali ? "निःशुल्क दर्ता गर्नुहोस्" : "Get Started Free"}
-            <ArrowRight className="w-4 h-4 ml-1.5" />
-          </Link>
-          <Link
-            href={`/${locale}/features`}
-            className={cn(
-              buttonVariants({ variant: "outline", size: "lg" }),
-              "border-border/80 hover:bg-muted font-semibold px-6"
-            )}
-          >
-            {isNepali ? "सबै सुविधाहरू हेर्नुहोस्" : "Explore All Features"}
-          </Link>
-        </div>
-      </div>
+      <CtaBanner locale={locale} noPadding />
     </div>
   );
 }

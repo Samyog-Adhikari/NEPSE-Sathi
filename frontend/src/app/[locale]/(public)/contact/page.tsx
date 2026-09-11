@@ -1,70 +1,28 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Mail,
+  Phone,
   MapPin,
   Send,
-  Headphones,
+  Zap,
+  ShieldCheck,
+  Heart,
+  MessageCircle,
+  Lightbulb,
   Bug,
-  Code2,
+  Users,
   CheckCircle2,
-  Copy,
-  Check,
-  ExternalLink,
-  Clock,
-  Sparkles,
-  MessageSquare,
-  HelpCircle,
+  Lock,
   ArrowRight,
-  ChevronDown,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-// Custom inline SVG icons for brand socials (guaranteed runtime safety)
-const GithubIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-    />
-  </svg>
-);
-
-const LinkedinIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.6a1.64 1.64 0 1 0 0 3.28 1.64 1.64 0 0 0 0-3.28z" />
-  </svg>
-);
-
-const XIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
-
-const FacebookIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-  </svg>
-);
-
-const InstagramIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-  </svg>
-);
-
-const YoutubeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-  </svg>
-);
 
 export default function ContactPage() {
   const pathname = usePathname() || "/en";
@@ -74,21 +32,22 @@ export default function ContactPage() {
   const [formData, setFormData] = React.useState({
     name: "",
     email: "",
-    category: "general",
     subject: "",
     message: "",
   });
   const [submitted, setSubmitted] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [copiedEmail, setCopiedEmail] = React.useState(false);
-  const [openFaq, setOpenFaq] = React.useState<number | null>(0);
+  const [openFaqs, setOpenFaqs] = React.useState<Record<number, boolean>>({
+    0: true,
+  });
 
   const contactEmail = "adhikarisamyog.dev@gmail.com";
 
-  const handleCopyEmail = () => {
-    navigator.clipboard.writeText(contactEmail);
-    setCopiedEmail(true);
-    setTimeout(() => setCopiedEmail(false), 2000);
+  const toggleFaq = (idx: number) => {
+    setOpenFaqs((prev) => ({
+      ...prev,
+      [idx]: !prev[idx],
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -101,547 +60,483 @@ export default function ContactPage() {
       setFormData({
         name: "",
         email: "",
-        category: "general",
         subject: "",
         message: "",
       });
     }, 600);
   };
 
-  const categories = [
-    { id: "general", label: isNepali ? "सामान्य सोधपुछ" : "General Inquiry" },
-    { id: "ai", label: isNepali ? "AI मोडेल र सिग्नल" : "AI & Signals" },
-    { id: "api", label: isNepali ? "डेटा र API पहुँच" : "Data & API" },
-    { id: "partnership", label: isNepali ? "साझेदारी" : "Partnership" },
-  ];
-
-  const socialLinks = [
+  const faqsList = [
     {
-      name: "GitHub",
-      href: "https://github.com/Samyog-Adhikari/NEPSE-Sathi",
-      icon: GithubIcon,
-      color: "hover:text-foreground hover:bg-muted",
-    },
-    {
-      name: "LinkedIn",
-      href: "https://linkedin.com",
-      icon: LinkedinIcon,
-      color: "hover:text-[#0A66C2] hover:bg-[#0A66C2]/10",
-    },
-    {
-      name: "X (Twitter)",
-      href: "https://twitter.com",
-      icon: XIcon,
-      color: "hover:text-foreground hover:bg-muted",
-    },
-    {
-      name: "Facebook",
-      href: "https://facebook.com",
-      icon: FacebookIcon,
-      color: "hover:text-[#1877F2] hover:bg-[#1877F2]/10",
-    },
-    {
-      name: "Instagram",
-      href: "https://instagram.com",
-      icon: InstagramIcon,
-      color: "hover:text-[#E4405F] hover:bg-[#E4405F]/10",
-    },
-    {
-      name: "YouTube",
-      href: "https://youtube.com",
-      icon: YoutubeIcon,
-      color: "hover:text-[#FF0000] hover:bg-[#FF0000]/10",
-    },
-  ];
-
-  const faqs = [
-    {
-      q: isNepali
-        ? "NEPSE Sathi को AI मोडेल कति चाँडो अपडेट हुन्छ?"
-        : "How frequently are the AI predictions updated?",
+      q: isNepali ? "खाता कसरी सिर्जना गर्ने?" : "How can I create an account?",
       a: isNepali
-        ? "प्रत्येक कारोबार दिन बजार बन्द भएपछि (३:०० PM NPT) हाम्रो LSTM + XGBoost मोडेलले नयाँ डेटा प्रशोधन गर्छ। बजार समयमा भने वास्तविक समयको फ्लोरसिट र मोमेन्टम सिग्नल निरन्तर अपडेट हुन्छ।"
-        : "Our deep neural networks and XGBoost engines re-train on post-close daily data at 3:00 PM NPT. Intraday momentum, floor sheet sentiment, and technical indicators stream in real-time via WebSockets.",
+        ? "तपाईं माथिल्लो नेभिगेसन बारमा रहेको 'Get Started' मा क्लिक गरेर आफ्नो इमेल वा गुगल खाता मार्फत केही सेकेन्डमै निःशुल्क दर्ता गर्न सक्नुहुन्छ।"
+        : "You can sign up for free in seconds with your email or Google account by clicking 'Get Started' on the navigation bar.",
     },
     {
-      q: isNepali
-        ? "के मलाई प्राविधिक ज्ञान बिना नै यो प्रयोग गर्न सजिलो छ?"
-        : "Can beginners easily understand and use NEPSE Sathi?",
+      q: isNepali ? "के म नयाँ फिचर सुझाव दिन सक्छु?" : "Can I suggest a new feature?",
       a: isNepali
-        ? "अवश्य! हामीले जटिल वित्तीय तथ्याङ्कलाई ०-१०० सम्मको सजिलो स्कोर, स्पष्ट बाइ/सेल संकेत, र पूर्ण नेपाली भाषामा प्रस्तुत गरेका छौं।"
-        : "Yes! Complex quantitative metrics are synthesized into clear 0–100 health scores, plain-language signals, and full native Nepali or English interfaces designed for all skill levels.",
+        ? "अवश्य! हामी समुदायका सुझाव अनुसार नै निरन्तर नयाँ फिचरहरू थप्दैछौं। माथिको सम्पर्क फारममा 'Feature Suggestion' विषय छनौट गरी सन्देश पठाउनुहोस्।"
+        : "Yes! We actively build based on community requests. Use the contact form above with 'Feature Suggestion' as the subject.",
     },
     {
-      q: isNepali
-        ? "के व्यक्तिगत लगानीकर्ताका लागि API उपलब्ध छ?"
-        : "Are API endpoints available for algorithmic traders?",
+      q: isNepali ? "के यो एप प्रयोग गर्न निःशुल्क छ?" : "Is the app free to use?",
       a: isNepali
-        ? "हो, हामी ऐतिहासिक क्यान्डलस्टिक, लाइभ टिकर, र AI सिग्नलका लागि REST र WebSocket API प्रदान गर्दछौं। थप विवरणका लागि हामीलाई 'डेटा र API' विषयमा सम्पर्क गर्नुहोस्।"
-        : "Yes, we offer both REST and WebSocket developer APIs for historical candlesticks, live floor sheet streaming, and quantitative signals. Select 'Data & API' above to request access.",
+        ? "NEPSE Sathi को आधारभूत सुविधाहरू (लाइभ क्यान्डलस्टिक चार्ट, इन्डिकेटर, पोर्टफोलियो ट्र्याकिङ) पूर्ण निःशुल्क छन्। उन्नत AI मोडेलहरूका लागि प्रो योजना उपलब्ध छ।"
+        : "NEPSE Sathi offers a generous free tier with live technical charts, indicators, and portfolio tracking. Advanced AI predictions are part of our Pro plan.",
     },
     {
-      q: isNepali
-        ? "यदि मैले डेटामा कुनै त्रुटि फेला पारेमा कसरी रिपोर्ट गर्ने?"
-        : "How do I report a data anomaly or bug?",
+      q: isNepali ? "के मेरो डाटा सुरक्षित छ?" : "Is my data safe?",
       a: isNepali
-        ? "तपाईं यो सम्पर्क फारमबाट 'Bug Bounty' च्यानल छनौट गर्न सक्नुहुन्छ वा सिधै हाम्रो इमेल adhikarisamyog.dev@gmail.com मा स्क्रिनसट पठाउन सक्नुहुन्छ।"
-        : "Select 'Bug Report' on this form or email us directly at adhikarisamyog.dev@gmail.com with relevant ticker symbols or screenshots for immediate investigation.",
+        ? "बिल्कुल। हामी बैंकिङ-स्तरको AES-256 इन्क्रिप्सन प्रयोग गर्छौं र तपाईंको व्यक्तिगत वित्तीय तथ्याङ्क कहिल्यै कसैलाई बेच्दैनौं वा साझेदारी गर्दैनौं।"
+        : "Absolutely. We use bank-grade AES-256 encryption for user portfolios and never sell or share your private trading activity.",
+    },
+    {
+      q: isNepali ? "सहायताका लागि कसरी सम्पर्क गर्ने?" : "How do I get in touch for support?",
+      a: isNepali
+        ? "तपाईं यो फारम भर्न सक्नुहुन्छ, सिधै adhikarisamyog.dev@gmail.com मा इमेल गर्न सक्नुहुन्छ, वा हाम्रो समुदाय डिस्कर्ड/टेलिग्राममा जोडिन सक्नुहुन्छ।"
+        : "You can send us a message via the form above, email adhikarisamyog.dev@gmail.com, or reach out to our community Telegram channels.",
+    },
+    {
+      q: isNepali ? "के प्रिमियम योजनाहरू उपलब्ध छन्?" : "Do you offer any premium plans?",
+      a: isNepali
+        ? "हो, NEPSE Sathi Pro मा गहिरो AI मूल्य चाल भविष्यवाणी, वास्तविक समयको फ्लोरसिट क्लस्टरिङ, र संस्थागत संकलन विश्लेषण उपलब्ध छ।"
+        : "Yes, NEPSE Sathi Pro includes deep AI price predictions, real-time floor sheet clustering, and smart money accumulation heatmaps.",
     },
   ];
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16 space-y-16 sm:space-y-24">
       {/* ========================================================================= */}
-      {/* 1. HERO HEADER (Centered & Distinct from About)                           */}
+      {/* 1. HERO — Centered, Elegant & Production-Grade (Distinct Layout)          */}
       {/* ========================================================================= */}
-      <div className="text-center max-w-3xl mx-auto space-y-6 pt-2">
+      <div className="text-center max-w-3xl mx-auto space-y-5 pt-2 sm:pt-6">
         <Badge
           variant="outline"
-          className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1.5 shadow-xs"
+          className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1.5 shadow-xs mx-auto inline-flex"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>{isNepali ? "सम्पर्क तथा सहायता" : "Direct Support & Inquiries"}</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span>{isNepali ? "सम्पर्क गर्नुहोस्" : "Contact Us"}</span>
         </Badge>
 
         <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground leading-[1.15]">
           {isNepali ? (
             <>
-              हामीसँग <span className="text-emerald-600 dark:text-emerald-400">सम्पर्क</span> गर्नुहोस्
+              जिज्ञासा छ?{" "}
+              <span className="text-emerald-600 dark:text-emerald-400">
+                हामी सहयोग गर्न
+              </span>{" "}
+              यहाँ छौं।
             </>
           ) : (
             <>
-              We&apos;re Here to Help You{" "}
+              Got Questions?{" "}
               <span className="text-emerald-600 dark:text-emerald-400">
-                Navigate NEPSE.
-              </span>
+                We&apos;re Here
+              </span>{" "}
+              to Help.
             </>
           )}
         </h1>
 
-        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-xl mx-auto">
           {isNepali
-            ? "AI मोडेल, डाटा फिड, प्राविधिक सूचक, वा साझेदारी सम्बन्धी कुनै पनि जिज्ञासा भएमा हामीलाई निसङ्कोच सम्पर्क गर्नुहोस्।"
-            : "Have questions about our AI models, real-time WebSocket feeds, technical indicators, or enterprise integrations? Reach out anytime."}
+            ? "कुनै प्रश्न, सुझाव वा नमस्कार मात्र भन्न चाहनुहुन्छ भने पनि हामी तपाईंको कुरा सुन्न चाहन्छौं। हाम्रो टोली सधैं सहयोग गर्न तयार छ।"
+            : "Whether you have a question, feedback, or just want to say hello — we'd love to hear from you. Our team is always ready to help and will get back to you as soon as possible."}
         </p>
 
-        {/* Quick Social Connect Bar placed right below Hero Intro */}
-        <div className="pt-2 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-          <span className="text-xs font-semibold text-muted-foreground mr-1 hidden sm:inline">
-            {isNepali ? "सामाजिक सञ्जालमा जोडिनुहोस्:" : "Connect with us:"}
-          </span>
-          {socialLinks.map((s) => {
-            const Icon = s.icon;
-            return (
-              <a
-                key={s.name}
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={s.name}
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border/70 bg-card text-muted-foreground transition-all duration-200 hover:scale-105 shadow-xs",
-                  s.color
-                )}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{s.name}</span>
-              </a>
-            );
-          })}
+        {/* 3 Centered Feature Bullets */}
+        <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 pt-2">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-border/80 text-xs font-medium text-foreground shadow-xs">
+            <div className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+              <Zap className="w-3 h-3" />
+            </div>
+            <span>{isNepali ? "२४ घण्टाभित्र द्रुत जवाफ" : "Quick Response (< 24h)"}</span>
+          </div>
+
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-border/80 text-xs font-medium text-foreground shadow-xs">
+            <div className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-3 h-3" />
+            </div>
+            <span>{isNepali ? "मित्रवत प्रत्यक्ष सहयोग" : "Friendly Support"}</span>
+          </div>
+
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-border/80 text-xs font-medium text-foreground shadow-xs">
+            <div className="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+              <Heart className="w-3 h-3" />
+            </div>
+            <span>{isNepali ? "तपाईंको सुझावबाट सुधार" : "Feedback Driven"}</span>
+          </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. MAIN WORKSPACE: Interactive Contact Form (Left) & Real Map (Right)    */}
+      {/* 2. CONTACT INFORMATION (Left) & SEND US A MESSAGE FORM (Right)            */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 items-start">
-        {/* Left Column (7 cols) — Interactive Contact Form */}
-        <div className="lg:col-span-7 rounded-3xl border border-border/80 bg-card p-6 sm:p-8 shadow-xl space-y-6 relative overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border/60 pb-4">
-            <div className="space-y-1">
-              <h2 className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-emerald-600" />
-                <span>{isNepali ? "सन्देश पठाउनुहोस्" : "Send us a Message"}</span>
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {isNepali
-                  ? "फारम भर्नुहोस्, हामी केही घण्टाभित्र जवाफ दिनेछौं।"
-                  : "Fill out the form and we'll get back to you within a few hours."}
-              </p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Card: Contact Information */}
+        <div className="lg:col-span-5 rounded-3xl border border-border/80 bg-card p-6 sm:p-8 shadow-md space-y-6">
+          <div className="space-y-2">
+            <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+              {isNepali ? "सम्पर्कमा रहनुहोस्" : "Get in Touch"}
             </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>&lt; 2h Response</span>
+            <h2 className="text-2xl font-extrabold text-foreground tracking-tight">
+              {isNepali ? "सम्पर्क जानकारी" : "Contact Information"}
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              {isNepali
+                ? "तपाईं निम्न कुनै पनि माध्यमबाट हामीलाई सम्पर्क गर्न सक्नुहुन्छ। हामी छिट्टै सम्पर्क गर्नेछौं।"
+                : "You can reach us through any of the following channels. We'll get back to you as soon as possible."}
+            </p>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            {/* Email */}
+            <div className="flex items-start gap-3.5 p-3 rounded-2xl hover:bg-muted/40 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <Mail className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Email
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-foreground font-mono">
+                  {contactEmail}
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {isNepali ? "हामी प्रायः २४ घण्टाभित्र जवाफ दिन्छौं।" : "We usually reply within 24 hours."}
+                </div>
+              </div>
+            </div>
+
+            {/* Phone */}
+            <div className="flex items-start gap-3.5 p-3 rounded-2xl hover:bg-muted/40 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <Phone className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Phone
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-foreground font-mono">
+                  +977 98 1234 5678
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {isNepali ? "आइत – शुक्र, १०:०० AM – ६:०० PM (NPT)" : "Mon – Fri, 10:00 AM – 6:00 PM (NPT)"}
+                </div>
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="flex items-start gap-3.5 p-3 rounded-2xl hover:bg-muted/40 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Location
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-foreground">
+                  Kathmandu, Nepal
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {isNepali ? "(अनलाइन / रिमोट सहायता उपलब्ध)" : "(Remote / Online Support Available)"}
+                </div>
+              </div>
             </div>
           </div>
 
-          {submitted ? (
-            <div className="py-12 text-center space-y-4 animate-in fade-in zoom-in-95 duration-300">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-7 h-7" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-xl font-bold text-foreground">
-                  {isNepali ? "सन्देश सफलतापूर्वक प्राप्त भयो!" : "Message Sent Successfully!"}
-                </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto">
+          {/* Bottom Alert Link to FAQs */}
+          <a
+            href="#faqs"
+            className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-500/15 transition-colors group cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5">
+              <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <div className="space-y-0.5 text-left">
+                <div className="text-xs font-bold">
+                  {isNepali ? "केही अन्योल छ?" : "Not sure about something?"}
+                </div>
+                <div className="text-[11px] text-muted-foreground">
                   {isNepali
-                    ? "तपाईंको सन्देशको लागि धन्यवाद। हाम्रो टोलीले समीक्षा गरी छिट्टै सम्पर्क गर्नेछ।"
-                    : "Thank you for reaching out. A team member will review your note and respond promptly."}
-                </p>
+                    ? "FAQ सेक्सन हेर्नुहोस्। त्यहाँ उत्तर भेटिन सक्छ!"
+                    : "Check out our FAQ section below for quick answers!"}
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setSubmitted(false)}
-                className="mt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
-              >
-                {isNepali ? "अर्को सन्देश पठाउनुहोस्" : "Send another message"}
-              </button>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Category Pills */}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground">
-                  {isNepali ? "सोधपुछ विषय" : "Inquiry Category"}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, category: cat.id })}
-                      className={cn(
-                        "px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all",
-                        formData.category === cat.id
-                          ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                          : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
-                      )}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <ArrowRight className="w-4 h-4 text-emerald-600 group-hover:translate-x-1 transition-transform shrink-0" />
+          </a>
+        </div>
 
-              {/* Name & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Right Card: Send Us a Message Form */}
+        <div className="lg:col-span-7 rounded-3xl border border-border/80 bg-card overflow-hidden shadow-md">
+          {/* Dark Forest Green Ribbon Header with Cursive */}
+          <div className="bg-gradient-to-r from-[#06241b] via-[#093126] to-[#06241b] text-white p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-800/40">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                {isNepali ? "हामीलाई सन्देश पठाउनुहोस्" : "Send Us a Message"}
+              </h2>
+              <p className="text-xs text-white/80">
+                {isNepali
+                  ? "तलको फारम भर्नुहोस् र हामी छिट्टै सम्पर्क गर्नेछौं।"
+                  : "Fill out the form below and we'll get back to you shortly."}
+              </p>
+            </div>
+            <div
+              className="text-lg sm:text-xl font-bold text-emerald-300 italic self-end sm:self-center"
+              style={{ fontFamily: "'Caveat', 'Segoe Script', cursive" }}
+            >
+              We&apos;d love to hear from you!
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-8 space-y-6">
+            {submitted ? (
+              <div className="py-12 text-center space-y-4 animate-in fade-in duration-300">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-foreground">
+                    {isNepali ? "सन्देश पठाइयो!" : "Message Sent Successfully!"}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {isNepali
+                      ? "हाम्रो टोलीले समीक्षा गरी चाँडै जवाफ दिनेछ।"
+                      : "Our team will review your message and reply soon."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSubmitted(false)}
+                  className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  {isNepali ? "अर्को सन्देश पठाउनुहोस्" : "Send another message"}
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">
+                      {isNepali ? "पूरा नाम" : "Full Name"} *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={isNepali ? "तपाईंको नाम" : "Your name"}
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">
+                      {isNepali ? "इमेल ठेगाना" : "Email Address"} *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="you@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-foreground">
-                    {isNepali ? "तपाईंको नाम" : "Full Name"} *
+                    {isNepali ? "विषय" : "Subject"} *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     required
-                    placeholder={isNepali ? "उदा: संयोग अधिकारी" : "e.g. Samyog Adhikari"}
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all"
-                  />
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all cursor-pointer"
+                  >
+                    <option value="">{isNepali ? "विषय छनौट गर्नुहोस्" : "Select a subject"}</option>
+                    <option value="General Inquiry">{isNepali ? "सामान्य सोधपुछ" : "General Inquiry"}</option>
+                    <option value="Technical Support">{isNepali ? "प्राविधिक सहायता" : "Technical Support"}</option>
+                    <option value="Feature Suggestion">{isNepali ? "फिचर सुझाव" : "Feature Suggestion"}</option>
+                    <option value="Bug Report">{isNepali ? "बग रिपोर्ट" : "Bug Report"}</option>
+                    <option value="Partnership">{isNepali ? "साझेदारी" : "Partnership"}</option>
+                  </select>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">
-                    {isNepali ? "इमेल ठेगाना" : "Email Address"} *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="name@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Subject */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">
-                  {isNepali ? "शीर्षक / विषय" : "Subject"}
-                </label>
-                <input
-                  type="text"
-                  placeholder={
-                    isNepali
-                      ? "छोटो विवरण..."
-                      : "Brief summary of your inquiry..."
-                  }
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all"
-                />
-              </div>
-
-              {/* Message */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
                   <label className="text-xs font-semibold text-foreground">
                     {isNepali ? "सन्देश" : "Message"} *
                   </label>
-                  <span className="text-[10px] text-muted-foreground">
-                    {formData.message.length}/1000
-                  </span>
+                  <textarea
+                    required
+                    rows={4}
+                    placeholder={isNepali ? "यहाँ सन्देश लेख्नुहोस्..." : "Type your message here..."}
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all resize-none"
+                  />
                 </div>
-                <textarea
-                  required
-                  rows={4}
-                  maxLength={1000}
-                  placeholder={
-                    isNepali
-                      ? "तपाईंको प्रश्न वा सुझाव यहाँ लेख्नुहोस्..."
-                      : "Write your message, question, or feature request here..."
-                  }
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border/80 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all resize-none"
-                />
-              </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={cn(
-                  buttonVariants({ size: "lg" }),
-                  "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
-                )}
-              >
-                {isSubmitting ? (
-                  <span className="inline-flex items-center gap-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={cn(
+                    buttonVariants({ size: "lg" }),
+                    "w-full rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer h-12"
+                  )}
+                >
+                  {isSubmitting ? (
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>{isNepali ? "पठाउँदैछ..." : "Sending Message..."}</span>
-                  </span>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    <span>{isNepali ? "सन्देश पठाउनुहोस्" : "Send Message"}</span>
-                  </>
-                )}
-              </button>
-            </form>
-          )}
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>{isNepali ? "सन्देश पठाउनुहोस्" : "Send Message"}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                <div className="text-center text-[11px] text-muted-foreground flex items-center justify-center gap-1.5 pt-1">
+                  <Lock className="w-3 h-3 text-muted-foreground/70" />
+                  <span>{isNepali ? "तपाईंको जानकारी सुरक्षित छ।" : "Your information is safe with us."}</span>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
+      </div>
 
-        {/* Right Column (5 cols) — Working Kathmandu Interactive Map & Direct Info */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Interactive Working Map of Kathmandu, Nepal */}
-          <div className="rounded-3xl border border-border/80 bg-card overflow-hidden shadow-xl">
-            <div className="p-4 border-b border-border/60 bg-muted/30 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-bold text-foreground">
-                  Kathmandu, Nepal
-                </span>
-              </div>
-              <a
-                href="https://www.openstreetmap.org/?mlat=27.7172&mlon=85.3240#map=13/27.7172/85.3240"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[11px] font-semibold text-emerald-600 hover:underline inline-flex items-center gap-1"
-              >
-                <span>{isNepali ? "पूर्ण नक्सा" : "Open Map"}</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-
-            {/* Embedded interactive OpenStreetMap centered on Kathmandu */}
-            <div className="relative w-full h-64 sm:h-72 bg-muted">
-              <iframe
-                title="Kathmandu Nepal Map"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=85.2500%2C27.6600%2C85.3850%2C27.7600&amp;layer=mapnik&amp;marker=27.7172%2C85.3240"
-                className="w-full h-full border-0"
-                loading="lazy"
-              />
-            </div>
-
-            {/* Map footer info pill */}
-            <div className="p-3.5 bg-card text-[11px] text-muted-foreground flex items-center justify-between border-t border-border/60">
-              <span className="font-mono">27.7172° N, 85.3240° E</span>
-              <span className="font-medium text-foreground">Bagmati Province</span>
-            </div>
-          </div>
-
-          {/* Direct Email Card with 1-click Copy */}
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-md space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                    {isNepali ? "प्रत्यक्ष इमेल" : "Direct Email"}
-                  </div>
-                  <div className="text-xs sm:text-sm font-bold text-foreground font-mono truncate max-w-[200px] sm:max-w-none">
-                    {contactEmail}
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCopyEmail}
-                title="Copy email to clipboard"
-                className="p-2 rounded-xl border border-border/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                {copiedEmail ? (
-                  <Check className="w-4 h-4 text-emerald-600" />
-                ) : (
-                  <Copy className="w-4 h-4" />
+      {/* ========================================================================= */}
+      {/* 3. 4 SUPPORT CARDS (Clean Minimal Cards - No Action Buttons)              */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {[
+          {
+            title: isNepali ? "साधारण प्रश्नहरू?" : "Common Questions?",
+            desc: isNepali
+              ? "साधारण प्रश्नहरूको द्रुत उत्तरका लागि हाम्रो FAQ हेर्नुहोस्।"
+              : "Browse our FAQ section for quick answers to the most common queries.",
+            icon: MessageCircle,
+            bg: "bg-emerald-100/90 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400",
+          },
+          {
+            title: isNepali ? "फिचर सुझावहरू" : "Feature Suggestions",
+            desc: isNepali
+              ? "एपलाई अझ राम्रो बनाउने कुनै विचार छ? हामी सुन्न चाहन्छौं!"
+              : "Have an idea to make our app better? We'd love to hear it!",
+            icon: Lightbulb,
+            bg: "bg-emerald-100/90 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400",
+          },
+          {
+            title: isNepali ? "समस्या रिपोर्ट गर्नुहोस्" : "Report an Issue",
+            desc: isNepali
+              ? "कुनै बग वा समस्या भेटियो? हामीलाई जानकारी दिनुहोस्।"
+              : "Found a bug or facing a problem? Let us know and we'll fix it.",
+            icon: Bug,
+            bg: "bg-amber-100/90 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400",
+          },
+          {
+            title: isNepali ? "समुदायमा जोडिनुहोस्" : "Join Our Community",
+            desc: isNepali
+              ? "अपडेट, सुझाव, र नवीनतम समाचारका लागि हामीलाई फलो गर्नुहोस्।"
+              : "Follow us for updates, tips and getting the latest news.",
+            icon: Users,
+            bg: "bg-teal-100/90 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400",
+          },
+        ].map((card) => {
+          const Icon = card.icon;
+          return (
+            <div
+              key={card.title}
+              className="group rounded-3xl border border-border/80 bg-card p-6 space-y-3 hover:border-emerald-500/40 hover:shadow-md transition-all duration-200"
+            >
+              <div
+                className={cn(
+                  "w-11 h-11 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs",
+                  card.bg
                 )}
-              </button>
-            </div>
-          </div>
-
-          {/* Operational Hours */}
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-md flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
-              <Clock className="w-4 h-4" />
-            </div>
-            <div className="space-y-1 text-xs">
-              <div className="font-bold text-foreground">
-                {isNepali ? "बजार सञ्चालन समय" : "Market & Support Hours"}
+              >
+                <Icon className="w-5 h-5" />
               </div>
-              <p className="text-muted-foreground leading-relaxed">
-                {isNepali
-                  ? "आइतबार – बिहीबार: ११:०० AM – ३:०० PM (NPT बजार समय)। हाम्रो सर्भर र AI पाइपलाइन २४/७ सञ्चालनमा रहन्छ।"
-                  : "Sunday – Thursday: 11:00 AM – 3:00 PM NPT (Trading Hours). AI data streaming & infrastructure are monitored 24/7."}
+              <h3 className="text-base font-bold text-foreground">
+                {card.title}
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {card.desc}
               </p>
             </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. SUPPORT CHANNELS (4 Distinct Cards)                                     */}
+      {/* 4. FREQUENTLY ASKED QUESTIONS (Connected by id="faqs")                     */}
       {/* ========================================================================= */}
-      <div className="space-y-6">
-        <div className="text-center max-w-xl mx-auto space-y-2">
-          <Badge
-            variant="outline"
-            className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1.5 shadow-xs"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>{isNepali ? "सहायता च्यानलहरू" : "Specialized Support"}</span>
-          </Badge>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-foreground">
-            {isNepali ? "तपाईंलाई आवश्यक सहयोग छनौट गर्नुहोस्" : "Direct Channels for Every Need"}
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              title: isNepali ? "ट्रेडिङ सहायता" : "Market Support",
-              desc: isNepali
-                ? "चार्ट, इन्डिकेटर, र वाचलिस्ट सम्बन्धी प्रश्नहरू।"
-                : "Questions about charts, technical indicators & watchlists.",
-              icon: Headphones,
-              contact: "support@nepse-sathi.com",
-            },
-            {
-              title: isNepali ? "API र इन्टिग्रेसन" : "API & Developers",
-              desc: isNepali
-                ? "अल्गोरिदम, ब्याकटेटिङ, र वेबहुक इन्टिग्रेसन।"
-                : "WebSocket feeds, REST keys & algorithmic integration.",
-              icon: Code2,
-              contact: "api@nepse-sathi.com",
-            },
-            {
-              title: isNepali ? "बग बाउन्टी" : "Bug Bounty",
-              desc: isNepali
-                ? "कुनै बग वा डेटा विसंगति भेटिएमा रिपोर्ट गर्नुहोस्।"
-                : "Report vulnerabilities or data stream anomalies.",
-              icon: Bug,
-              contact: "security@nepse-sathi.com",
-            },
-            {
-              title: isNepali ? "संस्थागत साझेदारी" : "Partnerships",
-              desc: isNepali
-                ? "ब्रोकर, विश्लेषक, र मिडिया सहकार्यका लागि।"
-                : "Broker integrations, research alliances & press.",
-              icon: Sparkles,
-              contact: "adhikarisamyog.dev@gmail.com",
-            },
-          ].map((channel) => {
-            const Icon = channel.icon;
-            return (
-              <div
-                key={channel.title}
-                className="group rounded-2xl border border-border/80 bg-card p-5 space-y-3 hover:border-emerald-500/40 hover:shadow-md transition-all duration-200"
-              >
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Icon className="w-4 h-4" />
-                </div>
-                <h3 className="text-sm font-bold text-foreground">
-                  {channel.title}
-                </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {channel.desc}
-                </p>
-                <div className="pt-1 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold truncate">
-                  {channel.contact}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 4. INTERACTIVE FAQ ACCORDION                                              */}
-      {/* ========================================================================= */}
-      <div className="rounded-3xl border border-border/80 bg-card p-6 sm:p-10 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-5">
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
-              <HelpCircle className="w-5 h-5 text-emerald-600" />
-              <span>{isNepali ? "प्राय सोधिने प्रश्नहरू" : "Frequently Asked Questions"}</span>
+      <section id="faqs" className="scroll-mt-24 space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="space-y-2">
+            <Badge
+              variant="outline"
+              className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 gap-1.5 shadow-xs"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>{isNepali ? "FAQ" : "FAQ"}</span>
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+              {isNepali ? "प्राय सोधिने प्रश्नहरू" : "Frequently Asked Questions"}
             </h2>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {isNepali
-                ? "तपाईंको प्रश्नको तत्काल उत्तर यहाँ फेला पार्नुहोस्।"
-                : "Quick answers to common questions about NEPSE Sathi."}
+                ? "तपाईंले खोजेको जवाफ भेटिएन? हामीलाई सम्पर्क गर्नुहोस् — हामी सहयोग गर्न खुसी छौं!"
+                : "Can't find what you're looking for? Reach out to us — we're happy to help!"}
             </p>
           </div>
-          <Link
-            href={`/${locale}/features`}
+
+          <a
+            href="#faqs"
             className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
           >
-            <span>{isNepali ? "सबै फिचरहरू हेर्नुहोस्" : "Explore All Features"}</span>
+            <span>{isNepali ? "सबै प्रश्नहरू" : "View all FAQs"}</span>
             <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          </a>
         </div>
 
-        <div className="divide-y divide-border/60">
-          {faqs.map((faq, idx) => {
-            const isOpen = openFaq === idx;
+        {/* 2-Column FAQ Grid Accordion */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+          {faqsList.map((faq, idx) => {
+            const isOpen = Boolean(openFaqs[idx]);
             return (
-              <div key={faq.q} className="py-4 first:pt-0 last:pb-0">
+              <div
+                key={faq.q}
+                className="rounded-2xl border border-border/80 bg-card overflow-hidden transition-all shadow-xs hover:border-emerald-500/30"
+              >
                 <button
                   type="button"
-                  onClick={() => setOpenFaq(isOpen ? null : idx)}
-                  className="w-full flex items-center justify-between text-left gap-4 text-sm font-bold text-foreground hover:text-emerald-600 transition-colors cursor-pointer"
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-3 text-sm font-bold text-foreground cursor-pointer hover:text-emerald-600 transition-colors"
                 >
                   <span>{faq.q}</span>
-                  <ChevronDown
-                    className={cn(
-                      "w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200",
-                      isOpen && "rotate-180 text-emerald-600"
+                  <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
+                    {isOpen ? (
+                      <Minus className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <Plus className="w-3.5 h-3.5" />
                     )}
-                  />
+                  </div>
                 </button>
+
                 {isOpen && (
-                  <p className="mt-2.5 text-xs sm:text-sm text-muted-foreground leading-relaxed animate-in fade-in duration-200">
-                    {faq.a}
-                  </p>
+                  <div className="px-4 sm:px-5 pb-5 pt-0 text-xs sm:text-sm text-muted-foreground leading-relaxed border-t border-border/40 animate-in fade-in duration-200">
+                    <p className="pt-3">{faq.a}</p>
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

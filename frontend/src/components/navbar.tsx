@@ -56,19 +56,19 @@ export function Navbar() {
           {/* Logo & Brand Name */}
           <Link
             href={`/${locale}`}
-            className="flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-full pr-2"
+            className="flex items-center gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-full pr-2"
           >
-            <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
+            <div className="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center shrink-0">
               <Image
                 src="/logo.png"
                 alt="NEPSE Sathi"
-                width={32}
-                height={32}
-                className="w-8 h-8 object-contain group-hover:scale-105 transition-transform"
+                width={40}
+                height={40}
+                className="w-9 h-9 sm:w-10 sm:h-10 object-contain group-hover:scale-105 transition-transform"
                 priority
               />
             </div>
-            <span className="font-bold text-base tracking-tight text-foreground">
+            <span className="font-bold text-lg tracking-tight text-foreground">
               NEPSE<span className="text-emerald-600 dark:text-emerald-400 font-extrabold">Sathi</span>
             </span>
           </Link>
@@ -134,9 +134,9 @@ export function Navbar() {
                 <SheetContent side="right" className="w-72 p-6 flex flex-col justify-between">
                   <div className="space-y-6">
                     <SheetHeader className="p-0">
-                      <SheetTitle className="flex items-center gap-2 text-left">
-                        <Image src="/logo.png" alt="Logo" width={24} height={24} className="w-6 h-6 object-contain" />
-                        <span className="font-bold text-sm">NEPSE Sathi</span>
+                      <SheetTitle className="flex items-center gap-2.5 text-left">
+                        <Image src="/logo.png" alt="Logo" width={32} height={32} className="w-8 h-8 object-contain" />
+                        <span className="font-bold text-base">NEPSE Sathi</span>
                       </SheetTitle>
                     </SheetHeader>
 
