@@ -12,7 +12,6 @@ import {
   ExternalLink,
   Check,
   RefreshCw,
-  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
@@ -193,7 +192,7 @@ export function PrivateStockCollection({ locale = "en" }: { locale?: string }) {
         <div className="flex items-center gap-2.5">
           {/* Ledger Icon */}
           <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-            <ScrollText className="w-4 h-4" />
+            <BookOpen className="w-4 h-4" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">

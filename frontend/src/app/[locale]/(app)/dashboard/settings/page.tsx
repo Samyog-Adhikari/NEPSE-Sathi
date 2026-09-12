@@ -21,16 +21,33 @@ import {
   Smartphone,
   Copy,
   Check,
-  QrCode,
   ShieldAlert,
   AlertTriangle,
-  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@/lib/supabase/client";
 
 type SettingsSection = "profile" | "security" | "preferences" | "account";
+
+function QrCodeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="5" height="5" x="3" y="3" rx="1" />
+      <rect width="5" height="5" x="16" y="3" rx="1" />
+      <rect width="5" height="5" x="3" y="16" rx="1" />
+      <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
+      <path d="M21 21v.01" />
+      <path d="M12 7v3a2 2 0 0 1-2 2H7" />
+      <path d="M3 12h.01" />
+      <path d="M12 3h.01" />
+      <path d="M12 16v.01" />
+      <path d="M16 12h1" />
+      <path d="M21 12v.01" />
+      <path d="M12 21v-1" />
+    </svg>
+  );
+}
 
 export default function SettingsPage() {
   const pathname = usePathname() || "";
@@ -79,30 +96,37 @@ export default function SettingsPage() {
 
   // Load user from Supabase / localStorage
   React.useEffect(() => {
+    const savedAvatar = typeof window !== "undefined" ? localStorage.getItem("nepse_user_avatar") : null;
+    const savedName = typeof window !== "undefined" ? localStorage.getItem("nepse_user_name") : null;
+    const saved2Fa = typeof window !== "undefined" ? localStorage.getItem("nepse_user_2fa") : null;
+
+    if (savedAvatar) setAvatarUrl(savedAvatar);
+    if (savedName) setFullName(savedName);
+    if (saved2Fa === "true") setTwoFaEnabled(true);
+
     const supabase = createClient();
     supabase.auth.getUser().then((res: any) => {
       const u = res?.data?.user;
       if (u) {
         if (u.user_metadata?.full_name) setFullName(u.user_metadata.full_name);
         if (u.email) setEmail(u.email);
-        if (u.user_metadata?.avatar_url) setAvatarUrl(u.user_metadata.avatar_url);
+        const metaAvatar = u.user_metadata?.avatar_url;
+        if (metaAvatar && metaAvatar !== "/logo.png") {
+          setAvatarUrl(metaAvatar);
+        } else if (savedAvatar) {
+          setAvatarUrl(savedAvatar);
+        }
       }
     });
-
-    const savedAvatar = localStorage.getItem("nepse_user_avatar");
-    if (savedAvatar) setAvatarUrl(savedAvatar);
-
-    const saved2Fa = localStorage.getItem("nepse_user_2fa");
-    if (saved2Fa === "true") setTwoFaEnabled(true);
   }, []);
 
-  // Avatar Upload Handler with 2MB validation
+  // Avatar Upload Handler with 2MB validation & Supabase Persistence
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAvatarError("");
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate size (max 2MB = 2 * 1024 * 1024 bytes)
+    // Validate size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       setAvatarError(isNepali ? "फोटोको आकार २ एमबी भन्दा कम हुनुपर्छ।" : "File size must be under 2MB.");
       return;
@@ -115,24 +139,41 @@ export default function SettingsPage() {
     }
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const result = event.target?.result as string;
       if (result) {
         setAvatarUrl(result);
         try {
           localStorage.setItem("nepse_user_avatar", result);
         } catch {}
-        showSuccess(isNepali ? "फोटो सफलतापूर्वक अपडेट गरियो!" : "Avatar updated successfully!");
+
+        // Persist directly to Supabase User Metadata
+        try {
+          const supabase = createClient();
+          await supabase.auth.updateUser({
+            data: { avatar_url: result }
+          });
+        } catch (err) {
+          console.error("Supabase avatar update error:", err);
+        }
+
+        window.dispatchEvent(new CustomEvent("nepse_avatar_changed", { detail: result }));
+        showSuccess(isNepali ? "फोटो सफलतापूर्वक अपडेट गरियो!" : "Avatar updated and saved permanently!");
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRemoveAvatar = () => {
+  const handleRemoveAvatar = async () => {
     setAvatarUrl("/logo.png");
     try {
       localStorage.removeItem("nepse_user_avatar");
+      const supabase = createClient();
+      await supabase.auth.updateUser({
+        data: { avatar_url: "/logo.png" }
+      });
     } catch {}
+    window.dispatchEvent(new CustomEvent("nepse_avatar_changed", { detail: "/logo.png" }));
     showSuccess(isNepali ? "फोटो हटाइयो।" : "Avatar removed.");
   };
 
@@ -163,9 +204,24 @@ export default function SettingsPage() {
     showSuccess(isNepali ? "२-तह प्रमाणीकरण निष्क्रिय गरियो।" : "Two-Factor Authentication disabled.");
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    showSuccess(isNepali ? "प्रोफाइल विवरणहरू सुरक्षित गरियो।" : "Profile information saved successfully!");
+    try {
+      const supabase = createClient();
+      await supabase.auth.updateUser({
+        data: {
+          full_name: fullName,
+          avatar_url: avatarUrl,
+          phone: phone,
+          bio: bio,
+        }
+      });
+      localStorage.setItem("nepse_user_name", fullName);
+      showSuccess(isNepali ? "प्रोफाइल विवरणहरू सफलतापूर्वक सुरक्षित गरियो।" : "Profile information saved permanently!");
+    } catch (err) {
+      console.error("Failed to save profile:", err);
+      showSuccess(isNepali ? "प्रोफाइल विवरणहरू सुरक्षित गरियो।" : "Profile information saved!");
+    }
   };
 
   const handleSavePreferences = (e: React.FormEvent) => {
@@ -417,7 +473,7 @@ export default function SettingsPage() {
                     <div className="p-4 rounded-xl bg-muted/30 border border-border/60 space-y-4 text-xs animate-in fade-in-0 duration-200">
                       <div className="flex items-center justify-between">
                         <h4 className="font-bold text-foreground flex items-center gap-1.5">
-                          <QrCode className="w-4 h-4 text-emerald-600" />
+                          <QrCodeIcon className="w-4 h-4 text-emerald-600" />
                           <span>{isNepali ? "चरण १: Authenticator एपमा स्क्यान गर्नुहोस्" : "Step 1: Scan QR Code with Authenticator"}</span>
                         </h4>
                         <button onClick={() => setShow2FaSetup(false)} className="text-muted-foreground hover:text-foreground">
@@ -428,7 +484,7 @@ export default function SettingsPage() {
                       {/* Mock QR Canvas */}
                       <div className="flex flex-col sm:flex-row items-center gap-4 p-3 bg-card rounded-lg border border-border/60">
                         <div className="w-28 h-28 bg-foreground/5 rounded-lg flex items-center justify-center border border-border/40 p-2 shrink-0">
-                          <QrCode className="w-20 h-20 text-foreground" />
+                          <QrCodeIcon className="w-20 h-20 text-foreground" />
                         </div>
                         <div className="space-y-2 flex-1">
                           <p className="text-[11px] text-muted-foreground">

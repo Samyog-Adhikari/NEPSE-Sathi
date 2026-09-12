@@ -39,6 +39,8 @@ class StockPricePoint(BaseModel):
     open_price: Optional[float] = None
     high_price: Optional[float] = None
     low_price: Optional[float] = None
+    previous_close: Optional[float] = None
+    sector: Optional[str] = None
     volume: int = 0
     turnover: float = 0.0
     data_status: DataStatus

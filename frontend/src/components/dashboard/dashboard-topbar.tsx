@@ -10,7 +10,7 @@ import {
   LogOut,
   User,
   Settings,
-  CheckCheck,
+  Check,
   TrendingUp,
   Activity,
   AlertCircle,
@@ -123,15 +123,35 @@ export function DashboardTopbar({ onMobileMenuToggle }: DashboardTopbarProps) {
 
   // Fetch logged in user details & avatar
   React.useEffect(() => {
+    // Initial local read for instant render without flicker
+    const savedAvatar = typeof window !== "undefined" ? localStorage.getItem("nepse_user_avatar") : null;
+    const savedName = typeof window !== "undefined" ? localStorage.getItem("nepse_user_name") : null;
+    if (savedAvatar || savedName) {
+      setUserProfile((prev) => ({
+        ...prev,
+        avatarUrl: savedAvatar || prev.avatarUrl,
+        name: savedName || prev.name,
+      }));
+    }
+
     supabase.auth.getUser().then((res: any) => {
       const u = res?.data?.user;
       if (u) {
         const name = u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split("@")[0] || "Investor";
         const email = u.email || "";
-        const avatarUrl = u.user_metadata?.avatar_url || localStorage.getItem("nepse_user_avatar") || "/logo.png";
-        setUserProfile({ name, email, avatarUrl });
+        const metaAvatar = u.user_metadata?.avatar_url;
+        const finalAvatar = (metaAvatar && metaAvatar !== "/logo.png") ? metaAvatar : (savedAvatar || metaAvatar || "/logo.png");
+        setUserProfile({ name, email, avatarUrl: finalAvatar });
       }
     });
+
+    const handleAvatarUpdate = (e: any) => {
+      if (e.detail) {
+        setUserProfile((prev) => ({ ...prev, avatarUrl: e.detail }));
+      }
+    };
+    window.addEventListener("nepse_avatar_changed", handleAvatarUpdate);
+    return () => window.removeEventListener("nepse_avatar_changed", handleAvatarUpdate);
   }, []);
 
   // Close dropdowns on outside click
@@ -333,7 +353,7 @@ export function DashboardTopbar({ onMobileMenuToggle }: DashboardTopbarProps) {
                     onClick={markAllAsRead}
                     className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors cursor-pointer"
                   >
-                    <CheckCheck className="w-3 h-3 text-emerald-600" />
+                    <Check className="w-3 h-3 text-emerald-600" />
                     <span>{isNepali ? "सबै पढियो" : "Mark all read"}</span>
                   </button>
                 )}

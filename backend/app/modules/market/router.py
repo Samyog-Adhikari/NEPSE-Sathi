@@ -116,6 +116,20 @@ async def get_live_ticker(
         "ticker_items": [s.model_dump() for s in top_ticker]
     }
 
+@router.get("/stocks")
+async def get_market_stocks(
+    provider: MarketDataProvider = Depends(get_market_data_provider)
+):
+    stocks = await provider.get_all_stocks()
+    snapshot = await provider.get_market_snapshot()
+    return {
+        "success": True,
+        "data_status": snapshot.data_status,
+        "last_updated": snapshot.last_updated.isoformat(),
+        "count": len(stocks),
+        "data": [s.model_dump() for s in stocks]
+    }
+
 @router.get("/status")
 async def get_market_status():
     from app.pipeline.runner import get_market_status_detail

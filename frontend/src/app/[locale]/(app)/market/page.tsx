@@ -4,31 +4,27 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  TrendingUp,
-  TrendingDown,
-  Clock,
   RefreshCw,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
-  BarChart3,
-  DollarSign,
-  Activity,
-  Layers,
   Search,
-  Filter,
   ArrowUpDown,
-  Building2,
-  Check,
-  Plus,
+  Maximize2,
+  Minimize2,
   ExternalLink,
-  ChevronRight,
-  Sparkles,
-  PieChart,
+  ChevronDown,
+  Layers,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  Activity,
+  Check,
+  Eye,
+  SlidersHorizontal,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { NepseTradingChart, ChartPoint } from "@/components/dashboard/nepse-trading-chart";
+import { MarketDepth } from "@/components/dashboard/market-depth";
+
+/* ─────── Types ─────── */
 
 interface MarketSnapshotData {
   index_value: number;
@@ -50,20 +46,14 @@ interface StockItem {
   ltp: number;
   point_change: number;
   change_percent: number;
-  open?: number;
-  high?: number;
-  low?: number;
+  open: number;
+  high: number;
+  low: number;
   volume: number;
   turnover: number;
+  previous_close: number;
   sector?: string;
-}
-
-interface TopMoversData {
-  gainers: StockItem[];
-  losers: StockItem[];
-  active: StockItem[];
-  by_volume: StockItem[];
-  by_turnover: StockItem[];
+  flash?: "up" | "down" | null;
 }
 
 interface MarketStatusData {
@@ -77,13 +67,6 @@ interface MarketStatusData {
   trading_hours: string;
 }
 
-interface SectorData {
-  sector_name: string;
-  index_value: number;
-  point_change: number;
-  percent_change: number;
-}
-
 export default function LiveMarketHubPage() {
   const pathname = usePathname() || "";
   const locale = pathname.startsWith("/ne") ? "ne" : "en";
@@ -91,759 +74,472 @@ export default function LiveMarketHubPage() {
 
   // Data states
   const [snapshot, setSnapshot] = React.useState<MarketSnapshotData | null>(null);
-  const [topMovers, setTopMovers] = React.useState<TopMoversData | null>(null);
   const [marketStatus, setMarketStatus] = React.useState<MarketStatusData | null>(null);
-  const [sectors, setSectors] = React.useState<SectorData[]>([]);
   const [allStocks, setAllStocks] = React.useState<StockItem[]>([]);
-  const [chartPoints, setChartPoints] = React.useState<ChartPoint[]>([]);
+  const previousStocksRef = React.useRef<Map<string, number>>(new Map());
 
-  // UI / Filter states
-  const [activeTimeframe, setActiveTimeframe] = React.useState<string>("1D");
-  const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
-  const [searchQuery, setSearchQuery] = React.useState<string>("");
-  const [stockFilter, setStockFilter] = React.useState<"all" | "gainers" | "losers" | "unchanged">("all");
-  const [activeMoverTab, setActiveMoverTab] = React.useState<"gainers" | "losers" | "turnover" | "volume">("gainers");
+  // UI Filters & Sorting
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [sectorFilter, setSectorFilter] = React.useState("ALL");
+  const [directionFilter, setDirectionFilter] = React.useState<"ALL" | "UP" | "DOWN" | "FLAT">("ALL");
   const [sortField, setSortField] = React.useState<keyof StockItem>("turnover");
-  const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("desc");
-  const [page, setPage] = React.useState<number>(1);
-  const pageSize = 20;
+  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
+  const [displayLimit, setDisplayLimit] = React.useState<number | "ALL">("ALL");
+  
+  // Market Depth Drawer / Focus
+  const [selectedDepthSymbol, setSelectedDepthSymbol] = React.useState<string | null>(null);
 
-  const [isLoading, setIsLoading] = React.useState<boolean>(true);
-  const [isChartLoading, setIsChartLoading] = React.useState<boolean>(false);
+  // Auto-polling and Fullscreen
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [autoRefresh, setAutoRefresh] = React.useState(true);
   const [lastRefreshed, setLastRefreshed] = React.useState<Date>(new Date());
-  const [autoRefresh, setAutoRefresh] = React.useState<boolean>(true);
-  const [addedSymbols, setAddedSymbols] = React.useState<Set<string>>(new Set());
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const tableContainerRef = React.useRef<HTMLDivElement>(null);
 
-  // Load Watchlist state from localStorage
-  React.useEffect(() => {
+  // Fetch Live Market Data
+  const loadMarketData = React.useCallback(async (isSilent = false) => {
+    if (!isSilent) setIsLoading(true);
+    else setIsRefreshing(true);
+
     try {
-      const saved = localStorage.getItem("nepse_user_watchlist");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setAddedSymbols(new Set(parsed));
-        }
-      }
-    } catch {}
-  }, []);
-
-  const toggleWatchlist = (symbol: string) => {
-    setAddedSymbols((prev) => {
-      const next = new Set(prev);
-      if (next.has(symbol)) {
-        next.delete(symbol);
-      } else {
-        next.add(symbol);
-      }
-      try {
-        localStorage.setItem("nepse_user_watchlist", JSON.stringify(Array.from(next)));
-      } catch {}
-      return next;
-    });
-  };
-
-  // Primary Data Load
-  const fetchMarketData = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [dashRes, moversRes, statusRes, sectorRes, stocksRes] = await Promise.all([
+      const [snapRes, statusRes, stocksRes] = await Promise.all([
         apiFetch<any>("/api/v1/market/dashboard"),
-        apiFetch<any>("/api/v1/market/top-movers"),
-        apiFetch<any>("/api/v1/market/status"),
-        apiFetch<any>("/api/v1/market/sectors"),
-        apiFetch<any>("/api/v1/stocks?limit=300"),
+        apiFetch<MarketStatusData>("/api/v1/market/status"),
+        apiFetch<any>("/api/v1/market/stocks"),
       ]);
 
-      if (dashRes.data?.snapshot) {
-        setSnapshot(dashRes.data.snapshot);
+      const snapObj: any = snapRes?.data;
+      if (snapObj) {
+        setSnapshot(snapObj.snapshot || snapObj);
       }
-      if (moversRes.data?.data) {
-        setTopMovers(moversRes.data.data);
-      } else if (dashRes.data?.top_movers) {
-        setTopMovers(dashRes.data.top_movers);
-      }
-      if (statusRes.data) {
+      if (statusRes?.data) {
         setMarketStatus(statusRes.data);
       }
-      if (sectorRes.data?.data) {
-        setSectors(sectorRes.data.data);
-      } else if (dashRes.data?.sector_performance) {
-        setSectors(dashRes.data.sector_performance);
-      }
-      if (stocksRes.data?.data && Array.isArray(stocksRes.data.data)) {
-        setAllStocks(stocksRes.data.data);
+
+      const stocksData: any = stocksRes?.data;
+      const rawStocks: any[] = Array.isArray(stocksData)
+        ? stocksData
+        : (Array.isArray(stocksData?.data) ? stocksData.data : []);
+
+      if (rawStocks && rawStocks.length > 0) {
+        const prevMap = previousStocksRef.current;
+        const mappedStocks: StockItem[] = rawStocks.map((s: any) => {
+          const ltp = Number(s.ltp ?? s.current_price ?? 0);
+          const rawPointChange = Number(s.point_change ?? 0);
+          const changePercent = Number(s.change_percent ?? s.percentage_change ?? 0);
+
+          // If point_change is 0 but percent change is present, calculate exact point delta
+          let pointChange = rawPointChange;
+          if (pointChange === 0 && changePercent !== 0 && ltp > 0) {
+            pointChange = Number(((ltp * changePercent) / (100 + changePercent)).toFixed(2));
+          }
+
+          let prevClose = Number(s.previous_close || 0);
+          if (prevClose <= 0 && ltp > 0) {
+            prevClose = Number((ltp - pointChange).toFixed(2));
+          }
+          if (prevClose <= 0) prevClose = ltp;
+
+          const open = Number(s.open_price ?? s.open ?? (prevClose > 0 ? prevClose : ltp));
+          const high = Number(s.high_price ?? s.high ?? Math.max(ltp, open, prevClose));
+          const low = Number(s.low_price ?? s.low ?? Math.min(ltp, open, prevClose));
+          const volume = Number(s.volume ?? 0);
+          const turnover = Number(s.turnover ?? (ltp * volume));
+
+          // Check if price changed since last poll for flash animation
+          let flash: "up" | "down" | null = null;
+          const oldPrice = prevMap.get(s.symbol);
+          if (oldPrice !== undefined && oldPrice !== ltp) {
+            flash = ltp > oldPrice ? "up" : "down";
+          }
+          prevMap.set(s.symbol, ltp);
+
+          return {
+            symbol: s.symbol,
+            name: s.name ?? s.company_name ?? s.symbol,
+            ltp,
+            point_change: pointChange,
+            change_percent: changePercent,
+            open,
+            high,
+            low,
+            previous_close: prevClose,
+            volume,
+            turnover,
+            sector: s.sector || "Others",
+            flash,
+          };
+        });
+
+        setAllStocks(mappedStocks);
       }
       setLastRefreshed(new Date());
     } catch (err) {
-      console.error("Live market data fetch error:", err);
+      console.error("Failed to load live market data:", err);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
-  // Fetch Chart Data
-  const fetchChartData = React.useCallback(async (tf: string) => {
-    setIsChartLoading(true);
-    try {
-      const res = await apiFetch<any>(`/api/v1/market/chart?timeframe=${tf}`);
-      if (res.data?.points) {
-        setChartPoints(res.data.points);
-      }
-    } catch (err) {
-      console.error("Chart load error:", err);
-    } finally {
-      setIsChartLoading(false);
-    }
-  }, []);
-
+  // Initial load
   React.useEffect(() => {
-    fetchMarketData();
-    fetchChartData(activeTimeframe);
-  }, [fetchMarketData, fetchChartData, activeTimeframe]);
+    loadMarketData(false);
+  }, [loadMarketData]);
 
-  // Auto-refresh timer every 30s if enabled
+  // Live Auto-Refresh polling (every 7 seconds)
   React.useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
-      fetchMarketData();
-      fetchChartData(activeTimeframe);
-    }, 30000);
+      loadMarketData(true);
+    }, 7000);
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchMarketData, fetchChartData, activeTimeframe]);
+  }, [autoRefresh, loadMarketData]);
 
-  const handleTimeframeChange = (tf: string) => {
-    setActiveTimeframe(tf);
-    fetchChartData(tf);
-  };
-
-  // Format helpers
-  const formatCurrency = (val?: number) => {
-    if (val === undefined || val === null || isNaN(val)) return "NPR 0.00";
-    if (val >= 10000000) {
-      return `NPR ${(val / 10000000).toFixed(2)} Cr`;
+  // Fullscreen toggle
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      tableContainerRef.current?.requestFullscreen?.();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.();
+      setIsFullscreen(false);
     }
-    if (val >= 100000) {
-      return `NPR ${(val / 100000).toFixed(2)} Lakh`;
-    }
-    return `NPR ${val.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
   };
 
-  const formatNumber = (val?: number) => {
-    if (val === undefined || val === null || isNaN(val)) return "0";
-    return val.toLocaleString("en-IN");
-  };
+  React.useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
 
-  // Filter & Sort Stocks
-  const filteredStocks = React.useMemo(() => {
-    return allStocks.filter((s) => {
-      // Sector filter
-      if (selectedSector !== "ALL") {
-        const sectorMatch = s.sector?.toLowerCase() === selectedSector.toLowerCase() ||
-          s.name?.toLowerCase().includes(selectedSector.toLowerCase());
-        if (!sectorMatch) return false;
-      }
-      // Status filter
-      if (stockFilter === "gainers" && s.point_change <= 0) return false;
-      if (stockFilter === "losers" && s.point_change >= 0) return false;
-      if (stockFilter === "unchanged" && s.point_change !== 0) return false;
-
-      // Search Query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const symMatch = s.symbol.toLowerCase().includes(q);
-        const nameMatch = s.name ? s.name.toLowerCase().includes(q) : false;
-        if (!symMatch && !nameMatch) return false;
-      }
-
-      return true;
-    }).sort((a, b) => {
-      let aVal = a[sortField] ?? 0;
-      let bVal = b[sortField] ?? 0;
-      if (typeof aVal === "string") aVal = (aVal as string).toLowerCase();
-      if (typeof bVal === "string") bVal = (bVal as string).toLowerCase();
-
-      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [allStocks, selectedSector, stockFilter, searchQuery, sortField, sortDirection]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredStocks.length / pageSize) || 1;
-  const paginatedStocks = React.useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredStocks.slice(start, start + pageSize);
-  }, [filteredStocks, page]);
-
+  // Sort handler
   const handleSort = (field: keyof StockItem) => {
     if (sortField === field) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
-      setSortDirection("desc");
+      setSortDir("desc");
     }
   };
 
-  const isPositive = (snapshot?.point_change || 0) > 0;
-  const isNegative = (snapshot?.point_change || 0) < 0;
+  // Extract distinct sectors
+  const sectorList = React.useMemo(() => {
+    const set = new Set<string>();
+    allStocks.forEach((s) => {
+      if (s.sector) set.add(s.sector);
+    });
+    return ["ALL", ...Array.from(set).sort()];
+  }, [allStocks]);
 
-  // Breadth calculation
-  const totalBreadth = (snapshot?.breadth_advancing || 0) + (snapshot?.breadth_declining || 0) + (snapshot?.breadth_unchanged || 0) || 1;
-  const advPct = Math.round(((snapshot?.breadth_advancing || 0) / totalBreadth) * 100);
-  const decPct = Math.round(((snapshot?.breadth_declining || 0) / totalBreadth) * 100);
-  const unchPct = Math.max(0, 100 - advPct - decPct);
+  // Filter & Sort stocks
+  const filteredStocks = React.useMemo(() => {
+    let list = [...allStocks];
+
+    // Search query (if provided via props/topbar)
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(
+        (s) => s.symbol.toLowerCase().includes(q) || (s.name && s.name.toLowerCase().includes(q))
+      );
+    }
+
+    // Sector filter
+    if (sectorFilter !== "ALL") {
+      list = list.filter((s) => s.sector === sectorFilter);
+    }
+
+    // Direction filter (UP / DOWN / FLAT)
+    if (directionFilter === "UP") {
+      list = list.filter((s) => s.point_change > 0 || s.change_percent > 0);
+    } else if (directionFilter === "DOWN") {
+      list = list.filter((s) => s.point_change < 0 || s.change_percent < 0);
+    } else if (directionFilter === "FLAT") {
+      list = list.filter(
+        (s) => (s.point_change === 0 || !s.point_change) && (s.change_percent === 0 || !s.change_percent)
+      );
+    }
+
+    // Sorting
+    list.sort((a, b) => {
+      let va = a[sortField] ?? 0;
+      let vb = b[sortField] ?? 0;
+
+      if (typeof va === "string" && typeof vb === "string") {
+        return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+      }
+
+      va = Number(va);
+      vb = Number(vb);
+      return sortDir === "asc" ? va - vb : vb - va;
+    });
+
+    // Display limit (All stocks vs limited)
+    if (displayLimit !== "ALL") {
+      return list.slice(0, displayLimit);
+    }
+
+    return list;
+  }, [allStocks, searchQuery, sectorFilter, directionFilter, sortField, sortDir, displayLimit]);
+
+  // Market Breadth counts
+  const advancingCount = allStocks.filter((s) => s.point_change > 0 || s.change_percent > 0).length;
+  const decliningCount = allStocks.filter((s) => s.point_change < 0 || s.change_percent < 0).length;
+  const unchangedCount = allStocks.filter(
+    (s) => (s.point_change === 0 || !s.point_change) && (s.change_percent === 0 || !s.change_percent)
+  ).length;
+  const totalCount = allStocks.length;
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* ── Top Header Banner ── */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-card/90 via-card to-card/80 border border-border/70 shadow-sm backdrop-blur-md">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
-              <Activity className="w-3.5 h-3.5 animate-pulse" />
-              <span>{isNepali ? "लाइभ बजार हब" : "Live Market Hub"}</span>
-            </div>
-
-            {/* Session Indicator */}
+    <div ref={tableContainerRef} className={cn("space-y-3 pb-12", isFullscreen && "p-4 bg-background overflow-y-auto h-screen")}>
+      {/* ── Top Header: Market State, Fullscreen, Auto-Refresh & Live Indicator ── */}
+      <div className="rounded-xl border border-border/70 bg-card p-3 sm:p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2">
+            {/* Glowing Neon Live Badge */}
             {marketStatus?.is_open ? (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-500 text-xs font-semibold">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                {isNepali ? "बजार खुला छ" : "Market Open"}
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-950/90 text-emerald-400 border border-emerald-500/40 text-[11px] font-bold tracking-wide flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.35)]">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live Market
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-500 text-xs font-semibold">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                {isNepali ? "बजार बन्द छ (अघिल्लो सत्र)" : "Market Closed (Previous Session)"}
+              <span className="px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700 text-[11px] font-semibold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-zinc-400" />
+                Market Closed
               </span>
             )}
 
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              {marketStatus?.current_nepal_time || "NPT 11:00 - 15:00"}
-            </span>
+            <h1 className="text-sm sm:text-base font-black text-foreground tracking-tight">
+              {isNepali ? "प्रत्यक्ष शेयर बजार हब" : "Live Market Hub"}
+            </h1>
           </div>
 
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {isNepali ? "नेपाल स्टक एक्सचेन्ज प्रत्यक्ष कारोबार हब" : "NEPSE Live Market Terminal"}
-          </h1>
-
-          <p className="text-xs text-muted-foreground flex items-center gap-2">
-            <span>
-              {marketStatus?.is_open
-                ? (isNepali ? "प्रत्यक्ष टिकर र फ्लो अपडेट हुँदैछ" : "Real-time session ticker and orderflow stream active")
-                : marketStatus?.reason || (isNepali ? "कारोबार सत्र सोमबार देखि शुक्रबार ११:०० देखि १५:०० सम्म हुन्छ" : "Trading session is Mon - Fri (11:00 AM - 3:00 PM NPT)")}
-            </span>
-            {!marketStatus?.is_open && marketStatus?.next_open_human && (
-              <span className="font-semibold text-foreground/80">
-                • {isNepali ? "खुल्ने समय:" : "Opens in:"} {marketStatus.next_open_human}
-              </span>
-            )}
-          </p>
+          <span className="text-[11px] text-muted-foreground font-mono">
+            ({totalCount > 0 ? totalCount : "360+"} {isNepali ? "कम्पनीहरू" : "Equities Available"})
+          </span>
         </div>
 
-        {/* Controls & Metrics */}
-        <div className="flex items-center gap-2.5 self-start lg:self-center">
+        {/* Right Tools: Auto-poll toggle, Manual refresh, Fullscreen */}
+        <div className="flex items-center gap-2">
+          {/* Auto Refresh Toggle */}
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={cn(
-              "px-3 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5",
+              "px-2.5 py-1 rounded-lg border text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer",
               autoRefresh
-                ? "bg-primary/10 border-primary/30 text-primary"
-                : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                : "border-border/70 text-muted-foreground hover:text-foreground"
             )}
-            title="Toggle 30s Auto Refresh"
+            title="Toggle real-time auto updates"
           >
-            <span className={cn("w-1.5 h-1.5 rounded-full", autoRefresh ? "bg-primary animate-pulse" : "bg-muted-foreground")} />
-            {autoRefresh ? (isNepali ? "स्वचालित ३० सेकेन्ड" : "Auto Sync (30s)") : (isNepali ? "म्यानुअल" : "Manual")}
+            <span className={cn("w-1.5 h-1.5 rounded-full", autoRefresh ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground")} />
+            <span>{autoRefresh ? "Auto-Sync On" : "Auto-Sync Off"}</span>
           </button>
 
+          {/* Manual Refresh Button */}
           <button
-            onClick={() => {
-              fetchMarketData();
-              fetchChartData(activeTimeframe);
-            }}
-            disabled={isLoading}
-            className="p-2 rounded-xl bg-card border border-border/80 text-foreground hover:bg-muted/60 transition-all active:scale-95 disabled:opacity-50"
-            title="Refresh Live Data"
+            onClick={() => loadMarketData(true)}
+            className="p-1.5 rounded-lg border border-border/70 bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+            title="Refresh live data now"
           >
-            <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoading && "animate-spin text-primary")} />
+            <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin text-emerald-600")} />
           </button>
 
-          <div className="text-right pl-3 border-l border-border/60 hidden sm:block">
-            <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-              {isNepali ? "अपडेट समय" : "Last Sync"}
-            </div>
-            <div className="text-xs font-mono font-semibold text-foreground">
-              {lastRefreshed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-            </div>
-          </div>
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={toggleFullscreen}
+            className="p-1.5 rounded-lg border border-border/70 bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen Terminal"}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
         </div>
       </div>
 
-      {/* ── Key Market Metric HUD Cards ── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {/* Card 1: NEPSE Index */}
-        <div className="p-4 rounded-xl bg-card border border-border/70 hover:border-border transition-all flex flex-col justify-between">
-          <span className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-            <span>NEPSE Index</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 font-mono">Main</span>
-          </span>
-          <div className="mt-2">
-            <div className="text-xl font-bold font-mono text-foreground">
-              {snapshot?.index_value ? snapshot.index_value.toFixed(2) : "..."}
-            </div>
-            <div className={cn(
-              "text-xs font-semibold font-mono flex items-center gap-1 mt-0.5",
-              isPositive ? "text-emerald-500" : isNegative ? "text-rose-500" : "text-blue-500"
-            )}>
-              {isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : isNegative ? <ArrowDownRight className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
-              <span>{isPositive ? "+" : ""}{snapshot?.point_change?.toFixed(2) || "0.00"}</span>
-              <span>({isPositive ? "+" : ""}{snapshot?.percent_change?.toFixed(2) || "0.00"}%)</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Total Turnover */}
-        <div className="p-4 rounded-xl bg-card border border-border/70 hover:border-border transition-all flex flex-col justify-between">
-          <span className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-            <span>{isNepali ? "कुल कारोबार" : "Total Turnover"}</span>
-            <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
-          </span>
-          <div className="mt-2">
-            <div className="text-lg font-bold font-mono text-foreground truncate">
-              {formatCurrency(snapshot?.turnover)}
-            </div>
-            <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-              {snapshot?.turnover ? `NPR ${snapshot.turnover.toLocaleString("en-IN")}` : "..."}
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: Total Shares Traded */}
-        <div className="p-4 rounded-xl bg-card border border-border/70 hover:border-border transition-all flex flex-col justify-between">
-          <span className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-            <span>{isNepali ? "कुल कित्ता" : "Total Shares"}</span>
-            <BarChart3 className="w-3.5 h-3.5 text-muted-foreground" />
-          </span>
-          <div className="mt-2">
-            <div className="text-lg font-bold font-mono text-foreground">
-              {formatNumber(snapshot?.total_shares)}
-            </div>
-            <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-              {isNepali ? "कारोबार भएका कित्ताहरू" : "Units Traded"}
-            </div>
-          </div>
-        </div>
-
-        {/* Card 4: Total Transactions */}
-        <div className="p-4 rounded-xl bg-card border border-border/70 hover:border-border transition-all flex flex-col justify-between">
-          <span className="text-xs font-medium text-muted-foreground flex items-center justify-between">
-            <span>{isNepali ? "कारोबार संख्या" : "Total Trades"}</span>
-            <Activity className="w-3.5 h-3.5 text-muted-foreground" />
-          </span>
-          <div className="mt-2">
-            <div className="text-lg font-bold font-mono text-foreground">
-              {formatNumber(snapshot?.total_transactions)}
-            </div>
-            <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-              {isNepali ? "सम्पन्न अर्डरहरू" : "Executed Transactions"}
-            </div>
-          </div>
-        </div>
-
-        {/* Card 5 & 6 (Span 2): Market Breadth Bar */}
-        <div className="col-span-2 p-4 rounded-xl bg-card border border-border/70 hover:border-border transition-all flex flex-col justify-between">
+      {/* ── Market Breadth Summary Bar (Advances, Declines, Unchanged) ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        {/* Advances (Up - Green) */}
+        <button
+          onClick={() => setDirectionFilter(directionFilter === "UP" ? "ALL" : "UP")}
+          className={cn(
+            "p-2.5 rounded-xl border transition-all text-left cursor-pointer",
+            directionFilter === "UP"
+              ? "bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500"
+              : "bg-card border-border/70 hover:border-emerald-500/40"
+          )}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              {isNepali ? "बजार चौडाइ (मार्केट ब्रेड्थ)" : "Market Breadth (Adv / Dec / Flat)"}
+            <span className="text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+              <ArrowUp className="w-3 h-3" /> Advances (Up)
             </span>
-            <span className="text-[10px] font-mono text-muted-foreground">
-              {snapshot?.breadth_advancing || 0} / {snapshot?.breadth_declining || 0} / {snapshot?.breadth_unchanged || 0}
+            <span className="font-mono text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+              {advancingCount}
             </span>
           </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {totalCount > 0 ? ((advancingCount / totalCount) * 100).toFixed(1) : 0}% of market
+          </p>
+        </button>
 
-          <div className="mt-2 space-y-1.5">
-            {/* Split Progress Bar */}
-            <div className="w-full h-2 rounded-full overflow-hidden bg-muted/40 flex">
-              <div
-                style={{ width: `${advPct}%` }}
-                className="h-full bg-emerald-500 transition-all duration-500"
-                title={`Advancing: ${snapshot?.breadth_advancing || 0} (${advPct}%)`}
-              />
-              <div
-                style={{ width: `${unchPct}%` }}
-                className="h-full bg-blue-500 transition-all duration-500"
-                title={`Unchanged: ${snapshot?.breadth_unchanged || 0} (${unchPct}%)`}
-              />
-              <div
-                style={{ width: `${decPct}%` }}
-                className="h-full bg-rose-500 transition-all duration-500"
-                title={`Declining: ${snapshot?.breadth_declining || 0} (${decPct}%)`}
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] font-mono">
-              <span className="text-emerald-500 font-semibold flex items-center gap-0.5">
-                ▲ {snapshot?.breadth_advancing || 0} ({advPct}%)
-              </span>
-              <span className="text-blue-500 font-semibold flex items-center gap-0.5">
-                ■ {snapshot?.breadth_unchanged || 0} ({unchPct}%)
-              </span>
-              <span className="text-rose-500 font-semibold flex items-center gap-0.5">
-                ▼ {snapshot?.breadth_declining || 0} ({decPct}%)
-              </span>
-            </div>
+        {/* Declines (Down - Red) */}
+        <button
+          onClick={() => setDirectionFilter(directionFilter === "DOWN" ? "ALL" : "DOWN")}
+          className={cn(
+            "p-2.5 rounded-xl border transition-all text-left cursor-pointer",
+            directionFilter === "DOWN"
+              ? "bg-rose-500/15 border-rose-500 text-rose-500 ring-1 ring-rose-500"
+              : "bg-card border-border/70 hover:border-rose-500/40"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10.5px] font-bold text-rose-500 uppercase tracking-wider flex items-center gap-1">
+              <ArrowDown className="w-3 h-3" /> Declines (Down)
+            </span>
+            <span className="font-mono text-sm font-extrabold text-rose-500">
+              {decliningCount}
+            </span>
           </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {totalCount > 0 ? ((decliningCount / totalCount) * 100).toFixed(1) : 0}% of market
+          </p>
+        </button>
+
+        {/* Unchanged (Neutral - Blue) */}
+        <button
+          onClick={() => setDirectionFilter(directionFilter === "FLAT" ? "ALL" : "FLAT")}
+          className={cn(
+            "p-2.5 rounded-xl border transition-all text-left cursor-pointer",
+            directionFilter === "FLAT"
+              ? "bg-blue-500/15 border-blue-500 text-blue-500 ring-1 ring-blue-500"
+              : "bg-card border-border/70 hover:border-blue-500/40"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10.5px] font-bold text-blue-500 uppercase tracking-wider flex items-center gap-1">
+              <Minus className="w-3 h-3" /> Unchanged (Neutral)
+            </span>
+            <span className="font-mono text-sm font-extrabold text-blue-500">
+              {unchangedCount}
+            </span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {totalCount > 0 ? ((unchangedCount / totalCount) * 100).toFixed(1) : 0}% of market
+          </p>
+        </button>
+
+        {/* Total Turnover */}
+        <div className="p-2.5 rounded-xl border border-border/70 bg-card">
+          <div className="flex items-center justify-between">
+            <span className="text-[10.5px] font-bold text-muted-foreground uppercase tracking-wider">
+              Total Turnover
+            </span>
+            <span className="font-mono text-xs font-extrabold text-foreground">
+              Rs. {snapshot?.turnover ? (snapshot.turnover / 1e7).toFixed(2) + " Cr" : "0.00"}
+            </span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            Vol: {snapshot?.total_shares ? snapshot.total_shares.toLocaleString() : "0"}
+          </p>
         </div>
       </div>
 
-      {/* ── Main Workstation: Chart & Top Movers ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left 8 Cols: Interactive Advanced Trading Chart */}
-        <div className="lg:col-span-8">
-          <NepseTradingChart
-            initialTimeframe={activeTimeframe}
-            onTimeframeChange={handleTimeframeChange}
-            indexValue={snapshot?.index_value || 0}
-            pointChange={snapshot?.point_change || 0}
-            percentChange={snapshot?.percent_change || 0}
-            turnover={snapshot?.turnover || 0}
-            totalShares={snapshot?.total_shares || 0}
-            points={chartPoints}
-            isLoading={isChartLoading}
-          />
+      {/* ── Optional Market Depth Drawer / Focus Component ── */}
+      {selectedDepthSymbol && (
+        <div className="relative animate-in fade-in-0 duration-200">
+          <MarketDepth initialSymbol={selectedDepthSymbol} />
+          <button
+            onClick={() => setSelectedDepthSymbol(null)}
+            className="absolute top-3 right-3 text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            Close Depth
+          </button>
+        </div>
+      )}
+
+      {/* ── Clean Toolbar: Sector Chips & Row Display Options (No Duplicate Search) ── */}
+      <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs space-y-2.5">
+        <div className="flex items-center justify-between gap-2.5 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Layers className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="font-semibold text-foreground">{isNepali ? "क्षेत्र अनुसार फिल्टर:" : "Sector Filter:"}</span>
+          </div>
+
+          {/* Row Display Limit Toggle (All vs 50 vs 100) */}
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-muted-foreground text-[11px]">{isNepali ? "देखाउनुहोस्:" : "Showing:"}</span>
+            <div className="flex items-center rounded-lg border border-border/70 p-0.5 bg-muted/40 text-[11px]">
+              <button
+                onClick={() => setDisplayLimit("ALL")}
+                className={cn(
+                  "px-2.5 py-0.5 rounded font-bold transition-all cursor-pointer",
+                  displayLimit === "ALL" ? "bg-emerald-600 text-white shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                All ({filteredStocks.length})
+              </button>
+              <button
+                onClick={() => setDisplayLimit(50)}
+                className={cn(
+                  "px-2 py-0.5 rounded font-semibold transition-all cursor-pointer",
+                  displayLimit === 50 ? "bg-emerald-600 text-white shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Top 50
+              </button>
+              <button
+                onClick={() => setDisplayLimit(100)}
+                className={cn(
+                  "px-2 py-0.5 rounded font-semibold transition-all cursor-pointer",
+                  displayLimit === 100 ? "bg-emerald-600 text-white shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Top 100
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Right 4 Cols: Top Movers & Liquidity Leaders */}
-        <div className="lg:col-span-4 p-5 rounded-2xl bg-card border border-border/70 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-border/60">
-              <h2 className="text-base font-bold text-foreground flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                {isNepali ? "बजारका मुख्य संवाहकहरू" : "Market Leaders"}
-              </h2>
-            </div>
-
-            {/* Tabs: Gainers / Losers / Turnover / Volume */}
-            <div className="grid grid-cols-4 gap-1 p-1 mt-3 bg-muted/40 rounded-xl border border-border/60">
-              <button
-                onClick={() => setActiveMoverTab("gainers")}
-                className={cn(
-                  "py-1.5 text-xs font-semibold rounded-lg transition-all",
-                  activeMoverTab === "gainers"
-                    ? "bg-emerald-500/15 text-emerald-500 border border-emerald-500/30"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {isNepali ? "बढ्ने" : "Gainers"}
-              </button>
-              <button
-                onClick={() => setActiveMoverTab("losers")}
-                className={cn(
-                  "py-1.5 text-xs font-semibold rounded-lg transition-all",
-                  activeMoverTab === "losers"
-                    ? "bg-rose-500/15 text-rose-500 border border-rose-500/30"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {isNepali ? "घट्ने" : "Losers"}
-              </button>
-              <button
-                onClick={() => setActiveMoverTab("turnover")}
-                className={cn(
-                  "py-1.5 text-xs font-semibold rounded-lg transition-all",
-                  activeMoverTab === "turnover"
-                    ? "bg-primary/15 text-primary border border-primary/30"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {isNepali ? "कारोबार" : "Turnover"}
-              </button>
-              <button
-                onClick={() => setActiveMoverTab("volume")}
-                className={cn(
-                  "py-1.5 text-xs font-semibold rounded-lg transition-all",
-                  activeMoverTab === "volume"
-                    ? "bg-primary/15 text-primary border border-primary/30"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {isNepali ? "कित्ता" : "Volume"}
-              </button>
-            </div>
-
-            {/* List */}
-            <div className="mt-3 divide-y divide-border/50 max-h-[350px] overflow-y-auto pr-1">
-              {(() => {
-                const currentList =
-                  activeMoverTab === "gainers"
-                    ? topMovers?.gainers || []
-                    : activeMoverTab === "losers"
-                    ? topMovers?.losers || []
-                    : activeMoverTab === "turnover"
-                    ? topMovers?.by_turnover || []
-                    : topMovers?.by_volume || [];
-
-                if (currentList.length === 0) {
-                  return (
-                    <div className="py-8 text-center text-xs text-muted-foreground">
-                      {isNepali ? "डाटा उपलब्ध छैन" : "No movers data available for current session"}
-                    </div>
-                  );
-                }
-
-                return currentList.slice(0, 6).map((item, idx) => {
-                  const itemPositive = item.point_change > 0;
-                  const itemNegative = item.point_change < 0;
-                  const inWatchlist = addedSymbols.has(item.symbol);
-
-                  return (
-                    <div
-                      key={item.symbol || idx}
-                      className="py-2.5 flex items-center justify-between group hover:bg-muted/30 px-2 rounded-lg transition-all"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <button
-                          onClick={() => toggleWatchlist(item.symbol)}
-                          className={cn(
-                            "p-1 rounded transition-all",
-                            inWatchlist
-                              ? "text-amber-500 hover:text-amber-600"
-                              : "text-muted-foreground/40 hover:text-foreground"
-                          )}
-                          title={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
-                        >
-                          <Plus className={cn("w-3.5 h-3.5", inWatchlist && "rotate-45 text-amber-500")} />
-                        </button>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-xs font-mono text-foreground group-hover:text-primary transition-colors">
-                              {item.symbol}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground truncate max-w-[90px]">
-                              {item.name || ""}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-muted-foreground font-mono">
-                            {activeMoverTab === "turnover"
-                              ? formatCurrency(item.turnover)
-                              : activeMoverTab === "volume"
-                              ? `${formatNumber(item.volume)} shares`
-                              : `${formatNumber(item.volume)} vol`}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="font-mono text-xs font-bold text-foreground">
-                          NPR {item.ltp?.toFixed(1) || "0.0"}
-                        </div>
-                        <div
-                          className={cn(
-                            "text-[11px] font-mono font-semibold flex items-center justify-end gap-0.5",
-                            itemPositive
-                              ? "text-emerald-500"
-                              : itemNegative
-                              ? "text-rose-500"
-                              : "text-blue-500"
-                          )}
-                        >
-                          {itemPositive ? "+" : ""}{item.change_percent?.toFixed(2)}%
-                        </div>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-border/60">
-            <Link
-              href="/stocks"
-              className="w-full py-2 rounded-xl bg-muted/40 hover:bg-muted border border-border/60 text-xs font-semibold text-foreground flex items-center justify-center gap-1.5 transition-all"
-            >
-              <span>{isNepali ? "पूर्ण स्क्रिनर खोल्नुहोस्" : "Open Full Stock Screener"}</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Sector Performance Matrix ── */}
-      <div className="p-5 rounded-2xl bg-card border border-border/70 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-              <Layers className="w-4 h-4 text-primary" />
-              {isNepali ? "क्षेत्रगत कार्यसम्पादन म्याट्रिक्स" : "Sectoral Performance Matrix"}
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {isNepali
-                ? "प्रत्येक उप-इन्डेक्सको प्रत्यक्ष उतारचढाव र प्रतिशत परिवर्तन"
-                : "Real-time performance across all 13 official NEPSE industry sub-indices"}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
+        {/* Sector Filter Chips Horizontal Scroll */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
+          {sectorList.map((sec) => (
             <button
-              onClick={() => setSelectedSector("ALL")}
+              key={sec}
+              onClick={() => setSectorFilter(sec)}
               className={cn(
-                "px-3 py-1 rounded-lg text-xs font-semibold border transition-all",
-                selectedSector === "ALL"
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                "px-2.5 py-1 rounded-lg border whitespace-nowrap font-medium transition-all cursor-pointer shrink-0",
+                sectorFilter === sec
+                  ? "bg-emerald-600 border-emerald-600 text-white font-bold shadow-xs"
+                  : "bg-background border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
-              {isNepali ? "सबै देखाउनुहोस्" : "Show All"}
+              {sec}
             </button>
-          </div>
-        </div>
-
-        {/* Sector Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-          {sectors.map((sec) => {
-            const secPositive = sec.percent_change > 0;
-            const secNegative = sec.percent_change < 0;
-            const isSelected = selectedSector.toLowerCase() === sec.sector_name.toLowerCase();
-
-            return (
-              <button
-                key={sec.sector_name}
-                onClick={() => setSelectedSector(isSelected ? "ALL" : sec.sector_name)}
-                className={cn(
-                  "p-3 rounded-xl border text-left transition-all relative overflow-hidden group",
-                  isSelected
-                    ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
-                    : "border-border/70 bg-card hover:border-border hover:bg-muted/30"
-                )}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-foreground truncate max-w-[120px]">
-                    {sec.sector_name}
-                  </span>
-                  {secPositive ? (
-                    <ArrowUpRight className="w-3 h-3 text-emerald-500 shrink-0" />
-                  ) : secNegative ? (
-                    <ArrowDownRight className="w-3 h-3 text-rose-500 shrink-0" />
-                  ) : (
-                    <Minus className="w-3 h-3 text-blue-500 shrink-0" />
-                  )}
-                </div>
-
-                <div className="font-mono text-sm font-bold text-foreground">
-                  {sec.index_value?.toFixed(2) || "0.00"}
-                </div>
-
-                <div
-                  className={cn(
-                    "text-[11px] font-mono font-semibold mt-0.5",
-                    secPositive
-                      ? "text-emerald-500"
-                      : secNegative
-                      ? "text-rose-500"
-                      : "text-blue-500"
-                  )}
-                >
-                  {secPositive ? "+" : ""}{sec.point_change?.toFixed(2)} ({secPositive ? "+" : ""}{sec.percent_change?.toFixed(2)}%)
-                </div>
-
-                {/* Subtle Accent Bottom Bar */}
-                <div
-                  className={cn(
-                    "absolute bottom-0 left-0 right-0 h-0.5",
-                    secPositive ? "bg-emerald-500" : secNegative ? "bg-rose-500" : "bg-blue-500"
-                  )}
-                />
-              </button>
-            );
-          })}
+          ))}
         </div>
       </div>
 
-      {/* ── Comprehensive Live Stocks Directory / Screener ── */}
-      <div className="p-5 rounded-2xl bg-card border border-border/70 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              {isNepali ? "प्रत्यक्ष शेयर मूल्य सूची" : "Live Stocks Screener & Market Depth"}
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {isNepali
-                ? `कुल ${filteredStocks.length} सूचीकृत कम्पनीहरूको वास्तविक बजार डेटा`
-                : `Showing ${filteredStocks.length} active listed equities with real-time LTP, turnover, and volume`}
-            </p>
-          </div>
-
-          {/* Search & Filters */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Search Input */}
-            <div className="relative min-w-[200px]">
-              <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setPage(1);
-                }}
-                placeholder={isNepali ? "सिम्बल वा कम्पनी खोज्नुहोस्..." : "Search symbol or company..."}
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-muted/40 border border-border/70 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-
-            {/* Gainers / Losers / All Filter */}
-            <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/60">
-              <button
-                onClick={() => { setStockFilter("all"); setPage(1); }}
-                className={cn(
-                  "px-2.5 py-1 text-xs font-semibold rounded-lg transition-all",
-                  stockFilter === "all" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-                )}
-              >
-                {isNepali ? "सबै" : "All"}
-              </button>
-              <button
-                onClick={() => { setStockFilter("gainers"); setPage(1); }}
-                className={cn(
-                  "px-2.5 py-1 text-xs font-semibold rounded-lg transition-all",
-                  stockFilter === "gainers" ? "bg-emerald-500/15 text-emerald-500" : "text-muted-foreground"
-                )}
-              >
-                {isNepali ? "बढेका" : "Gainers"}
-              </button>
-              <button
-                onClick={() => { setStockFilter("losers"); setPage(1); }}
-                className={cn(
-                  "px-2.5 py-1 text-xs font-semibold rounded-lg transition-all",
-                  stockFilter === "losers" ? "bg-rose-500/15 text-rose-500" : "text-muted-foreground"
-                )}
-              >
-                {isNepali ? "घटेका" : "Losers"}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto rounded-xl border border-border/60">
+      {/* ── Data-Dense Live Market Table (All Stocks on One Page) ── */}
+      <div className="rounded-xl border border-border/70 bg-card overflow-hidden shadow-xs">
+        <div className="overflow-x-auto max-h-[750px] overflow-y-auto divide-y divide-border/40">
           <table className="w-full text-left text-xs">
-            <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">
+            <thead className="sticky top-0 bg-muted/95 backdrop-blur-md z-20 border-b border-border text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-3 w-10 text-center">#</th>
+                <th className="py-2.5 px-3 w-10 text-center">#</th>
                 <th
                   onClick={() => handleSort("symbol")}
-                  className="py-3 px-3 cursor-pointer hover:text-foreground transition-colors"
+                  className="py-2.5 px-3 cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center gap-1">
-                    <span>{isNepali ? "सिम्बल" : "Symbol"}</span>
+                    <span>Symbol</span>
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleSort("ltp")}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-foreground transition-colors"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center justify-end gap-1">
                     <span>LTP (NPR)</span>
@@ -852,16 +548,16 @@ export default function LiveMarketHubPage() {
                 </th>
                 <th
                   onClick={() => handleSort("point_change")}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-foreground transition-colors"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center justify-end gap-1">
-                    <span>{isNepali ? "परिवर्तन" : "Change"}</span>
+                    <span>Change</span>
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleSort("change_percent")}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-foreground transition-colors"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center justify-end gap-1">
                     <span>% Change</span>
@@ -869,130 +565,211 @@ export default function LiveMarketHubPage() {
                   </div>
                 </th>
                 <th
-                  onClick={() => handleSort("high")}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-foreground transition-colors hidden sm:table-cell"
+                  onClick={() => handleSort("open")}
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-foreground select-none"
                 >
-                  <span>{isNepali ? "उच्च" : "High"}</span>
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Open</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("high")}
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-foreground select-none"
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    <span>High</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
                 </th>
                 <th
                   onClick={() => handleSort("low")}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-foreground transition-colors hidden sm:table-cell"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-foreground select-none"
                 >
-                  <span>{isNepali ? "न्यून" : "Low"}</span>
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Low</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("previous_close")}
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-foreground select-none"
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Prev. Close</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
                 </th>
                 <th
                   onClick={() => handleSort("volume")}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-foreground transition-colors hidden md:table-cell"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center justify-end gap-1">
-                    <span>{isNepali ? "कित्ता" : "Volume"}</span>
+                    <span>Qty (Vol)</span>
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
                 <th
                   onClick={() => handleSort("turnover")}
-                  className="py-3 px-3 text-right cursor-pointer hover:text-foreground transition-colors hidden lg:table-cell"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-foreground select-none"
                 >
                   <div className="flex items-center justify-end gap-1">
-                    <span>{isNepali ? "कारोबार रकम" : "Turnover (NPR)"}</span>
+                    <span>Turnover</span>
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
-                <th className="py-3 px-3 text-center">{isNepali ? "कार्य" : "Action"}</th>
+                <th className="py-2.5 px-3 text-center">Depth</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/40 font-mono">
-              {paginatedStocks.length === 0 ? (
+
+            <tbody className="divide-y divide-border/25 font-mono">
+              {isLoading && allStocks.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-xs text-muted-foreground">
-                    {isNepali ? "कुनै स्टक फेला परेन" : "No stocks match your search criteria."}
+                  <td colSpan={12} className="py-12 text-center text-xs text-muted-foreground font-sans">
+                    <div className="flex items-center justify-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+                      <span>Loading live NEPSE market data...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredStocks.length === 0 ? (
+                <tr>
+                  <td colSpan={12} className="py-12 text-center text-xs text-muted-foreground font-sans">
+                    No stocks match the selected criteria.
                   </td>
                 </tr>
               ) : (
-                paginatedStocks.map((stock, idx) => {
-                  const itemPos = stock.point_change > 0;
-                  const itemNeg = stock.point_change < 0;
-                  const inWatchlist = addedSymbols.has(stock.symbol);
-                  const rank = (page - 1) * pageSize + idx + 1;
+                filteredStocks.map((stk, idx) => {
+                  const isUp = stk.point_change > 0 || stk.change_percent > 0;
+                  const isDown = stk.point_change < 0 || stk.change_percent < 0;
+                  const isFlat = !isUp && !isDown;
 
                   return (
                     <tr
-                      key={stock.symbol}
-                      className="hover:bg-muted/40 transition-colors group"
+                      key={stk.symbol}
+                      className={cn(
+                        "transition-colors duration-150 border-b border-border/40",
+                        /* High-contrast easily separable row styling: Green if UP, Red if DOWN, Blue if NOT TOUCHED */
+                        isUp && "bg-emerald-950/25 hover:bg-emerald-900/40 border-l-4 border-l-emerald-500",
+                        isDown && "bg-rose-950/25 hover:bg-rose-900/40 border-l-4 border-l-rose-500",
+                        isFlat && "bg-blue-950/25 hover:bg-blue-900/40 border-l-4 border-l-blue-500",
+                        stk.flash === "up" && "bg-emerald-500/35 animate-pulse",
+                        stk.flash === "down" && "bg-rose-500/35 animate-pulse"
+                      )}
                     >
-                      <td className="py-2.5 px-3 text-center text-muted-foreground text-[11px]">
-                        {rank}
+                      {/* # SN */}
+                      <td className="py-2.5 px-3 text-center text-muted-foreground text-[10px] font-mono">
+                        {idx + 1}
                       </td>
+
+                      {/* Symbol & Name */}
                       <td className="py-2.5 px-3 font-sans">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => toggleWatchlist(stock.symbol)}
-                            className={cn(
-                              "p-1 rounded transition-all",
-                              inWatchlist
-                                ? "text-amber-500"
-                                : "text-muted-foreground/30 hover:text-foreground"
-                            )}
-                            title={inWatchlist ? "In watchlist" : "Add to watchlist"}
-                          >
-                            <Plus className={cn("w-3.5 h-3.5", inWatchlist && "rotate-45 text-amber-500")} />
-                          </button>
-                          <div>
-                            <span className="font-bold font-mono text-foreground text-xs group-hover:text-primary transition-colors">
-                              {stock.symbol}
+                        <Link
+                          href={`/${locale}/stocks/${stk.symbol}`}
+                          className="font-mono font-bold text-xs text-foreground hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5"
+                        >
+                          <span className={cn(
+                            "font-black tracking-wide",
+                            isUp && "text-emerald-400",
+                            isDown && "text-rose-400",
+                            isFlat && "text-blue-400"
+                          )}>{stk.symbol}</span>
+                          {stk.sector && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-normal truncate max-w-[90px]">
+                              {stk.sector}
                             </span>
-                            {stock.name && (
-                              <span className="text-[10px] text-muted-foreground block truncate max-w-[160px]">
-                                {stock.name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-bold text-foreground">
-                        {stock.ltp?.toFixed(1) || "0.0"}
-                      </td>
-                      <td
-                        className={cn(
-                          "py-2.5 px-3 text-right font-semibold",
-                          itemPos ? "text-emerald-500" : itemNeg ? "text-rose-500" : "text-blue-500"
+                          )}
+                        </Link>
+                        {stk.name && stk.name !== stk.symbol && (
+                          <span className="block text-[10px] text-muted-foreground truncate max-w-[160px]">
+                            {stk.name}
+                          </span>
                         )}
-                      >
-                        {itemPos ? "+" : ""}{stock.point_change?.toFixed(2) || "0.00"}
                       </td>
-                      <td
-                        className={cn(
-                          "py-2.5 px-3 text-right font-bold",
-                          itemPos ? "text-emerald-500" : itemNeg ? "text-rose-500" : "text-blue-500"
-                        )}
-                      >
-                        <span className={cn(
-                          "px-1.5 py-0.5 rounded text-[11px]",
-                          itemPos ? "bg-emerald-500/10" : itemNeg ? "bg-rose-500/10" : "bg-blue-500/10"
-                        )}>
-                          {itemPos ? "+" : ""}{stock.change_percent?.toFixed(2) || "0.00"}%
+
+                      {/* LTP (NPR) */}
+                      <td className="py-2.5 px-3 text-right">
+                        <span
+                          className={cn(
+                            "font-black text-xs font-mono",
+                            isUp && "text-emerald-400",
+                            isDown && "text-rose-400",
+                            isFlat && "text-blue-400"
+                          )}
+                        >
+                          {stk.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-right text-muted-foreground hidden sm:table-cell">
-                        {stock.high ? stock.high.toFixed(1) : "-"}
-                      </td>
-                      <td className="py-2.5 px-3 text-right text-muted-foreground hidden sm:table-cell">
-                        {stock.low ? stock.low.toFixed(1) : "-"}
-                      </td>
-                      <td className="py-2.5 px-3 text-right text-foreground hidden md:table-cell">
-                        {formatNumber(stock.volume)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right text-foreground hidden lg:table-cell">
-                        {formatCurrency(stock.turnover)}
-                      </td>
-                      <td className="py-2.5 px-3 text-center">
-                        <Link
-                          href={`/technicals?symbol=${stock.symbol}`}
-                          className="px-2 py-1 rounded-md bg-muted/60 hover:bg-primary hover:text-primary-foreground text-[10px] font-sans font-semibold transition-all inline-flex items-center gap-1"
+
+                      {/* Point Change */}
+                      <td className="py-2.5 px-3 text-right">
+                        <span
+                          className={cn(
+                            "font-bold text-xs font-mono inline-flex items-center gap-0.5",
+                            isUp && "text-emerald-400",
+                            isDown && "text-rose-400",
+                            isFlat && "text-blue-400"
+                          )}
                         >
-                          <span>{isNepali ? "चार्ट" : "Chart"}</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
-                        </Link>
+                          {isUp ? "+" : ""}{stk.point_change.toFixed(2)}
+                        </span>
+                      </td>
+
+                      {/* % Change Pill */}
+                      <td className="py-2.5 px-3 text-right">
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded-md text-[11px] font-extrabold font-mono inline-block min-w-[56px] text-center shadow-xs",
+                            isUp && "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40",
+                            isDown && "bg-rose-500/20 text-rose-300 border border-rose-500/40",
+                            isFlat && "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                          )}
+                        >
+                          {isUp ? "+" : ""}{stk.change_percent.toFixed(2)}%
+                        </span>
+                      </td>
+
+                      {/* Open */}
+                      <td className="py-2.5 px-3 text-right text-muted-foreground font-mono text-xs">
+                        {stk.open > 0 ? stk.open.toFixed(2) : "-"}
+                      </td>
+
+                      {/* High */}
+                      <td className="py-2.5 px-3 text-right text-emerald-400 font-mono font-semibold text-xs">
+                        {stk.high > 0 ? stk.high.toFixed(2) : "-"}
+                      </td>
+
+                      {/* Low */}
+                      <td className="py-2.5 px-3 text-right text-rose-400 font-mono font-semibold text-xs">
+                        {stk.low > 0 ? stk.low.toFixed(2) : "-"}
+                      </td>
+
+                      {/* Prev Close */}
+                      <td className="py-2.5 px-3 text-right text-muted-foreground font-mono text-xs">
+                        {stk.previous_close > 0 ? stk.previous_close.toFixed(2) : stk.ltp.toFixed(2)}
+                      </td>
+
+                      {/* Volume */}
+                      <td className="py-2.5 px-3 text-right text-foreground font-medium font-mono text-xs">
+                        {stk.volume.toLocaleString("en-IN")}
+                      </td>
+
+                      {/* Turnover */}
+                      <td className="py-2.5 px-3 text-right text-foreground font-bold font-mono text-xs">
+                        {stk.turnover > 1e7
+                          ? `Rs. ${(stk.turnover / 1e7).toFixed(2)} Cr`
+                          : `Rs. ${stk.turnover.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
+                      </td>
+
+                      {/* Market Depth Trigger */}
+                      <td className="py-2.5 px-3 text-center">
+                        <button
+                          onClick={() => setSelectedDepthSymbol(stk.symbol)}
+                          className="px-2.5 py-1 rounded-md text-[10px] font-sans font-bold bg-muted/80 hover:bg-emerald-500/20 hover:text-emerald-400 text-muted-foreground transition-all cursor-pointer border border-border/50"
+                          title="Open Market Depth Order Book"
+                        >
+                          Depth
+                        </button>
                       </td>
                     </tr>
                   );
@@ -1000,52 +777,6 @@ export default function LiveMarketHubPage() {
               )}
             </tbody>
           </table>
-        </div>
-
-        {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-          <div className="text-xs text-muted-foreground">
-            {isNepali ? "पृष्ठ" : "Page"} <span className="font-semibold text-foreground">{page}</span> / <span className="font-semibold text-foreground">{totalPages}</span> (
-            {filteredStocks.length} {isNepali ? "कम्पनीहरू" : "stocks"})
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-card border border-border/70 hover:bg-muted disabled:opacity-40 transition-all"
-            >
-              {isNepali ? "अघिल्लो" : "Previous"}
-            </button>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum = i + 1;
-              if (totalPages > 5 && page > 3) {
-                pageNum = page - 3 + i;
-                if (pageNum > totalPages) pageNum = totalPages - (4 - i);
-              }
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => setPage(pageNum)}
-                  className={cn(
-                    "w-7 h-7 rounded-lg text-xs font-semibold transition-all",
-                    page === pageNum
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border border-border/60 hover:bg-muted text-muted-foreground"
-                  )}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-card border border-border/70 hover:bg-muted disabled:opacity-40 transition-all"
-            >
-              {isNepali ? "पछिल्लो" : "Next"}
-            </button>
-          </div>
         </div>
       </div>
     </div>

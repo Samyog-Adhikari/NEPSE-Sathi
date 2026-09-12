@@ -2,32 +2,26 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Edit3,
   MapPin,
   Calendar,
-  Target,
-  ArrowRight,
-  TrendingUp,
-  Briefcase,
-  BarChart3,
-  Star,
-  Newspaper,
-  Clock,
   ShieldCheck,
-  Mail,
-  PieChart,
+  TrendingUp,
   Activity,
-  Layers,
+  DollarSign,
+  Briefcase,
+  AlertTriangle,
+  Trash2,
   Lock,
+  User,
+  Mail,
   Smartphone,
-  Check,
-  Upload,
-  Globe,
-  Bell,
+  CheckCircle2,
+  ArrowRight,
   Sliders,
-  Sparkles,
+  Clock,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -35,38 +29,51 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function ProfilePage() {
   const pathname = usePathname() || "";
+  const router = useRouter();
   const locale = pathname.startsWith("/ne") ? "ne" : "en";
   const isNepali = locale === "ne";
 
   const [user, setUser] = React.useState<any>(null);
-  const [activeTab, setActiveTab] = React.useState<"Overview" | "Security & Details" | "Trading Preferences">("Overview");
-  const [avatarUrl, setAvatarUrl] = React.useState("/logo.png");
-  const [is2FaEnabled, setIs2FaEnabled] = React.useState(false);
+  const [avatarUrl, setAvatarUrl] = React.useState<string>("/logo.png");
+  const [fullName, setFullName] = React.useState("Samyog Adhikari");
+  const [email, setEmail] = React.useState("investor@nepse-sathi.com");
+  const [isDeactivating, setIsDeactivating] = React.useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = React.useState(false);
+  const [confirmDeleteInput, setConfirmDeleteInput] = React.useState("");
+  const [actionMessage, setActionMessage] = React.useState("");
 
+  // Load user data reliably
   React.useEffect(() => {
+    // 1. Check local storage immediately for fast zero-delay display
+    const savedAvatar = typeof window !== "undefined" ? localStorage.getItem("nepse_user_avatar") : null;
+    const savedName = typeof window !== "undefined" ? localStorage.getItem("nepse_user_name") : null;
+    if (savedAvatar) setAvatarUrl(savedAvatar);
+    if (savedName) setFullName(savedName);
+
+    // 2. Fetch from Supabase
     const supabase = createClient();
     supabase.auth.getUser().then((res: any) => {
       const u = res?.data?.user;
       if (u) {
         setUser(u);
-        if (u.user_metadata?.avatar_url) {
-          setAvatarUrl(u.user_metadata.avatar_url);
-        }
+        const name = u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split("@")[0] || "Investor";
+        setFullName(name);
+        if (u.email) setEmail(u.email);
+
+        const metaAvatar = u.user_metadata?.avatar_url;
+        // Never overwrite a valid custom base64 avatar with default fallback
+        const bestAvatar = (metaAvatar && metaAvatar !== "/logo.png") ? metaAvatar : (savedAvatar || metaAvatar || "/logo.png");
+        setAvatarUrl(bestAvatar);
       }
     });
 
-    const savedAvatar = localStorage.getItem("nepse_user_avatar");
-    if (savedAvatar) setAvatarUrl(savedAvatar);
-
-    const saved2Fa = localStorage.getItem("nepse_user_2fa");
-    if (saved2Fa === "true") setIs2FaEnabled(true);
+    // 3. Listen to avatar changes across components
+    const onAvatarChanged = (e: any) => {
+      if (e.detail) setAvatarUrl(e.detail);
+    };
+    window.addEventListener("nepse_avatar_changed", onAvatarChanged);
+    return () => window.removeEventListener("nepse_avatar_changed", onAvatarChanged);
   }, []);
-
-  const fullName =
-    user?.user_metadata?.full_name ||
-    user?.user_metadata?.name ||
-    user?.email?.split("@")[0] ||
-    "Samyog Adhikari";
 
   const initials = fullName
     .split(" ")
@@ -75,287 +82,359 @@ export default function ProfilePage() {
     .toUpperCase()
     .slice(0, 2) || "SA";
 
-  const accountOpenedDate = user?.created_at
-    ? new Date(user.created_at).toLocaleDateString(isNepali ? "ne-NP" : "en-US", {
-        month: "long",
+  const accountJoinedDate = user?.created_at
+    ? new Date(user.created_at).toLocaleDateString("en-US", {
+        month: "short",
         day: "numeric",
         year: "numeric",
       })
-    : "September 2026";
+    : "Aug 12, 2025";
 
-  const profileTabs = [
-    { id: "Overview" as const, label: isNepali ? "सिंहावलोकन (Overview)" : "Overview", icon: Activity },
-    { id: "Security & Details" as const, label: isNepali ? "सुरक्षा र विवरण (Security & Details)" : "Security & Details", icon: ShieldCheck },
-    { id: "Trading Preferences" as const, label: isNepali ? "ट्रेडिङ प्राथमिकताहरू (Trading Preferences)" : "Trading Preferences", icon: Sliders },
-  ];
+  // Account Deactivation Handler
+  const handleDeactivateAccount = async () => {
+    if (confirmDeleteInput.trim().toUpperCase() !== "DEACTIVATE") {
+      return;
+    }
+    setIsDeactivating(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      localStorage.clear();
+      setActionMessage(isNepali ? "खाता सफलतापूर्वक निष्क्रिय गरियो।" : "Account has been deactivated successfully.");
+      setTimeout(() => {
+        router.push(`/${locale}/login`);
+      }, 1500);
+    } catch (err) {
+      console.error("Deactivation error:", err);
+      setIsDeactivating(false);
+    }
+  };
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto pb-12">
-      {/* ─── Profile Header Card ─── */}
-      <div className="rounded-xl border border-border/70 bg-card p-5 sm:p-6 shadow-xs">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-          <div className="flex items-center gap-4">
-            {/* Avatar */}
+    <div className="space-y-6 max-w-[1200px] mx-auto pb-16">
+      {/* ─── Profile Header Banner ─── */}
+      <div className="relative rounded-2xl border border-border/70 bg-card p-6 sm:p-8 shadow-sm overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            {/* Avatar with Persistent Fallback */}
             <div className="relative shrink-0">
-              <Avatar className="w-16 h-16 sm:w-20 sm:h-20 ring-2 ring-emerald-500/20 shadow-xs">
-                <AvatarImage src={avatarUrl} alt={fullName} />
-                <AvatarFallback className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xl font-bold">
+              <Avatar className="w-24 h-24 sm:w-28 sm:h-28 ring-4 ring-emerald-500/20 shadow-md">
+                <AvatarImage
+                  src={avatarUrl}
+                  alt={fullName}
+                  className="object-cover"
+                  onError={(e) => {
+                    // Prevent image disappearing on network blip
+                    (e.target as HTMLImageElement).src = "/logo.png";
+                  }}
+                />
+                <AvatarFallback className="bg-emerald-600 text-white font-black text-2xl">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-card" />
+              <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-4 ring-card" title="Online" />
             </div>
 
-            {/* User Info */}
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+            {/* Main User Details */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
                   {fullName}
                 </h1>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
-                  <ShieldCheck className="w-3 h-3" />
-                  <span>{isNepali ? "प्रमाणित लगानीकर्ता" : "Verified Member"}</span>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" />
+                  {isNepali ? "प्रमाणित लगानीकर्ता" : "Verified NEPSE Investor"}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {user?.email || "investor@nepse-sathi.com"}
+
+              <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                <span className="flex items-center gap-1.5">
+                  <Mail className="w-4 h-4 text-emerald-600" />
+                  {email}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+                  Kathmandu, Nepal
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-emerald-600" />
+                  NPT (UTC+5:45)
+                </span>
+              </div>
+
+              <p className="text-sm text-foreground/80 font-medium pt-1">
+                Joined on <strong className="text-foreground">{accountJoinedDate}</strong> • Active NEPSE Market Participant
               </p>
-              <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground pt-0.5">
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-muted-foreground" />
-                  <span>Kathmandu, Nepal</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3 text-muted-foreground" />
-                  <span>Joined {accountOpenedDate}</span>
-                </span>
-              </div>
             </div>
           </div>
 
-          {/* Edit Profile Action */}
-          <Link
-            href={`/${locale}/dashboard/settings`}
-            className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer self-start sm:self-auto"
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>{isNepali ? "सेटिङ सम्पादन गर्नुहोस्" : "Edit in Settings"}</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* ─── Profile Navigation Tabs ─── */}
-      <div className="flex items-center gap-1 border-b border-border/60 pb-px overflow-x-auto">
-        {profileTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap",
-              activeTab === tab.id
-                ? "border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 rounded-t-lg"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40"
-            )}
-          >
-            <tab.icon className="w-3.5 h-3.5" />
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* ─── Tab 1: Overview ─── */}
-      {activeTab === "Overview" && (
-        <div className="space-y-5 animate-in fade-in-0 duration-150">
-          {/* 3 Overview Quick Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <div className="p-4 rounded-xl border border-border/70 bg-card shadow-xs">
-              <span className="text-xs text-muted-foreground font-medium flex items-center justify-between">
-                <span>{isNepali ? "खाता स्थिति" : "Account Status"}</span>
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              </span>
-              <div className="text-base font-bold text-foreground mt-2 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span>Active & Verified</span>
-              </div>
-              <span className="text-[11px] text-muted-foreground mt-0.5 block">Full NEPSE data access</span>
-            </div>
-
-            <div className="p-4 rounded-xl border border-border/70 bg-card shadow-xs">
-              <span className="text-xs text-muted-foreground font-medium flex items-center justify-between">
-                <span>{isNepali ? "वाचलिस्ट स्टकहरू" : "Watchlist Equities"}</span>
-                <BarChart3 className="w-4 h-4 text-primary" />
-              </span>
-              <div className="text-base font-bold text-foreground mt-2 font-mono">
-                Live Tracking Active
-              </div>
-              <span className="text-[11px] text-muted-foreground mt-0.5 block">Private stock ledger connected</span>
-            </div>
-
-            <div className="p-4 rounded-xl border border-border/70 bg-card shadow-xs">
-              <span className="text-xs text-muted-foreground font-medium flex items-center justify-between">
-                <span>{isNepali ? "२-तह सुरक्षा (2FA)" : "Security Level"}</span>
-                <Lock className="w-4 h-4 text-amber-500" />
-              </span>
-              <div className="text-base font-bold text-foreground mt-2">
-                {is2FaEnabled ? "High (2FA Active)" : "Standard"}
-              </div>
-              <span className="text-[11px] text-muted-foreground mt-0.5 block">
-                {is2FaEnabled ? "Authenticator verified" : "2FA recommended"}
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Shortcuts */}
-          <div className="p-5 rounded-xl border border-border/70 bg-card shadow-xs space-y-3">
-            <h3 className="text-sm font-bold text-foreground">
-              {isNepali ? "टर्मिनलका द्रुत लिङ्कहरू" : "Platform Terminal Links"}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Link
-                href={`/${locale}/dashboard`}
-                className="p-3 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/60 transition-all flex items-center justify-between text-xs font-semibold text-foreground group"
-              >
-                <span>{isNepali ? "मुख्य ड्यासबोर्ड" : "Main Terminal Dashboard"}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                href={`/${locale}/market`}
-                className="p-3 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/60 transition-all flex items-center justify-between text-xs font-semibold text-foreground group"
-              >
-                <span>{isNepali ? "लाइभ बजार हब" : "Live Market Hub"}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                href={`/${locale}/technicals`}
-                className="p-3 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/60 transition-all flex items-center justify-between text-xs font-semibold text-foreground group"
-              >
-                <span>{isNepali ? "प्राविधिक चार्टहरू" : "Technical Charts"}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Tab 2: Security & Details ─── */}
-      {activeTab === "Security & Details" && (
-        <div className="p-5 rounded-xl border border-border/70 bg-card shadow-xs space-y-4 animate-in fade-in-0 duration-150 text-xs">
-          <div>
-            <h3 className="text-sm font-bold text-foreground">
-              {isNepali ? "सुरक्षा विवरण र लगइन जानकारी" : "Security & Authentication Details"}
-            </h3>
-            <p className="text-[11px] text-muted-foreground">
-              {isNepali ? "तपाईंको खाताको लगइन सुरक्षा, सत्र र प्रमाणिकरण स्थिति।" : "Overview of account credentials, active sessions, and multi-factor status."}
-            </p>
-          </div>
-
-          <div className="divide-y divide-border/40 space-y-3">
-            <div className="flex items-center justify-between pt-2">
-              <div>
-                <span className="font-semibold text-foreground block">Primary Email</span>
-                <span className="text-muted-foreground text-[11px]">{user?.email || "investor@nepse-sathi.com"}</span>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-bold text-[10px]">
-                Verified
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between pt-3">
-              <div>
-                <span className="font-semibold text-foreground block">Two-Factor Authentication (2FA)</span>
-                <span className="text-muted-foreground text-[11px]">
-                  {is2FaEnabled ? "TOTP Authenticator enabled" : "Not configured yet"}
-                </span>
-              </div>
-              <Link
-                href={`/${locale}/dashboard/settings`}
-                className="px-2.5 py-1 rounded-md border border-border/80 hover:bg-muted font-semibold text-[11px]"
-              >
-                {is2FaEnabled ? "Manage 2FA" : "Configure 2FA"}
-              </Link>
-            </div>
-
-            <div className="flex items-center justify-between pt-3">
-              <div>
-                <span className="font-semibold text-foreground block">Password Status</span>
-                <span className="text-muted-foreground text-[11px]">Last updated recently</span>
-              </div>
-              <Link
-                href={`/${locale}/dashboard/settings`}
-                className="px-2.5 py-1 rounded-md border border-border/80 hover:bg-muted font-semibold text-[11px]"
-              >
-                Change Password
-              </Link>
-            </div>
-
-            <div className="flex items-center justify-between pt-3">
-              <div>
-                <span className="font-semibold text-foreground block">Active Browser Session</span>
-                <span className="text-muted-foreground text-[11px]">Logged in via Supabase Authentication (JWT)</span>
-              </div>
-              <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-bold text-[10px]">
-                Active Now
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── Tab 3: Trading Preferences ─── */}
-      {activeTab === "Trading Preferences" && (
-        <div className="p-5 rounded-xl border border-border/70 bg-card shadow-xs space-y-4 animate-in fade-in-0 duration-150 text-xs">
-          <div>
-            <h3 className="text-sm font-bold text-foreground">
-              {isNepali ? "ट्रेडिङ र बजार प्राथमिकताहरू" : "Trading Terminal Preferences"}
-            </h3>
-            <p className="text-[11px] text-muted-foreground">
-              {isNepali ? "तपाईंको पूर्वनिर्धारित चार्ट, क्षेत्र र सूचना कन्फिगरेसन।" : "Terminal configuration and alert delivery channels."}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-            <div className="p-3.5 rounded-lg bg-muted/20 border border-border/50 space-y-1">
-              <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider block">
-                Default Timeframe
-              </span>
-              <span className="text-sm font-bold text-foreground font-mono">1D (Intraday 5-min Spline)</span>
-            </div>
-
-            <div className="p-3.5 rounded-lg bg-muted/20 border border-border/50 space-y-1">
-              <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider block">
-                Primary Watch Sector
-              </span>
-              <span className="text-sm font-bold text-foreground">Commercial Banking & Hydropower</span>
-            </div>
-
-            <div className="p-3.5 rounded-lg bg-muted/20 border border-border/50 space-y-1">
-              <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider block">
-                Telegram Bot Alerts
-              </span>
-              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <Check className="w-3.5 h-3.5" />
-                <span>Connected (@NEPSE_Sathi_Bot)</span>
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-lg bg-muted/20 border border-border/50 space-y-1">
-              <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider block">
-                Market Calendar & Hours
-              </span>
-              <span className="text-sm font-bold text-foreground">
-                Mon - Fri (11:00 AM - 3:00 PM NPT)
-              </span>
-            </div>
-          </div>
-
-          <div className="pt-2">
+          {/* Action: Edit Profile */}
+          <div className="flex items-center gap-3">
             <Link
               href={`/${locale}/dashboard/settings`}
-              className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold inline-flex items-center gap-1.5 transition-all shadow-xs"
+              className="px-4 py-2.5 rounded-xl border border-border/80 bg-background hover:bg-muted text-foreground font-bold text-sm flex items-center gap-2 transition-all shadow-xs"
             >
-              <Sliders className="w-3 h-3" />
-              <span>{isNepali ? "प्राथमिकताहरू परिवर्तन गर्नुहोस्" : "Change Preferences in Settings"}</span>
+              <Edit3 className="w-4 h-4 text-emerald-600" />
+              <span>{isNepali ? "सेटिङ सम्पादन गर्नुहोस्" : "Edit Preferences"}</span>
             </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Key Stats Grid ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Portfolio Value */}
+        <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {isNepali ? "कुल पोर्टफोलियो" : "Portfolio Value"}
+            </span>
+            <div className="font-mono text-xl sm:text-2xl font-black text-foreground">
+              Rs. 1,24,568
+            </div>
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              ↑ +18.4% Return
+            </span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <Briefcase className="w-6 h-6" />
+          </div>
+        </div>
+
+        {/* Win Rate */}
+        <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {isNepali ? "सफलता दर" : "Trade Win Rate"}
+            </span>
+            <div className="font-mono text-xl sm:text-2xl font-black text-foreground">
+              68.5%
+            </div>
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              ↑ 28 Closed Trades
+            </span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+        </div>
+
+        {/* Focus Sector */}
+        <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {isNepali ? "मुख्य क्षेत्र" : "Focus Sector"}
+            </span>
+            <div className="text-lg sm:text-xl font-black text-foreground truncate max-w-[150px]">
+              Commercial Banks
+            </div>
+            <span className="text-xs text-muted-foreground font-medium">
+              & Hydropower
+            </span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+            <Activity className="w-6 h-6" />
+          </div>
+        </div>
+
+        {/* Security & 2FA */}
+        <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {isNepali ? "सुरक्षा स्थिति" : "Account Security"}
+            </span>
+            <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+              <CheckCircle2 className="w-5 h-5" />
+              Protected
+            </div>
+            <span className="text-xs text-muted-foreground font-medium">
+              Telegram Alerts Linked
+            </span>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Profile Details & Trading Preferences ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Investor Profile Summary */}
+        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <div className="flex items-center gap-2">
+              <User className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-base font-bold text-foreground">
+                {isNepali ? "व्यक्तिगत विवरण" : "Personal Information"}
+              </h3>
+            </div>
+            <Link
+              href={`/${locale}/dashboard/settings`}
+              className="text-xs font-bold text-emerald-600 hover:underline"
+            >
+              {isNepali ? "परिवर्तन गर्नुहोस्" : "Update"}
+            </Link>
+          </div>
+
+          <div className="space-y-3.5 text-sm">
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">{isNepali ? "पुरा नाम" : "Full Name"}</span>
+              <span className="font-bold text-foreground">{fullName}</span>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">{isNepali ? "इमेल ठेगाना" : "Email Address"}</span>
+              <span className="font-bold text-foreground">{email}</span>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">{isNepali ? "फोन नम्बर" : "Phone"}</span>
+              <span className="font-mono font-bold text-foreground">+977 9800000000</span>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">{isNepali ? "केवाइसी प्रमाणीकरण" : "KYC Status"}</span>
+              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                <CheckCircle2 className="w-4 h-4" /> Completed
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">{isNepali ? "समय क्षेत्र" : "Timezone"}</span>
+              <span className="font-mono font-bold text-foreground">Asia/Kathmandu (NPT +5:45)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Trading Preferences */}
+        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <div className="flex items-center gap-2">
+              <Sliders className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-base font-bold text-foreground">
+                {isNepali ? "कारोबार प्राथमिकताहरू" : "Trading & Alert Preferences"}
+              </h3>
+            </div>
+            <Link
+              href={`/${locale}/dashboard/settings`}
+              className="text-xs font-bold text-emerald-600 hover:underline"
+            >
+              {isNepali ? "सम्पादन" : "Configure"}
+            </Link>
+          </div>
+
+          <div className="space-y-3.5 text-sm">
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">{isNepali ? "लगानी रणनीति" : "Strategy"}</span>
+              <span className="font-bold text-foreground">Growth & Value Investing</span>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">{isNepali ? "जोखिम स्तर" : "Risk Tolerance"}</span>
+              <span className="font-bold text-foreground">Moderate</span>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">{isNepali ? "चार्ट अन्तराल" : "Default Chart Interval"}</span>
+              <span className="font-mono font-bold text-foreground">1D / 5m Intraday</span>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">{isNepali ? "टेलिग्राम सूचना" : "Telegram Bot Alerts"}</span>
+              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                <CheckCircle2 className="w-4 h-4" /> Enabled (@NEPSE_Sathi_Bot)
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">{isNepali ? "इमेल बजार सारांश" : "Daily Dispatch"}</span>
+              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                <CheckCircle2 className="w-4 h-4" /> Subscribed
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Account Deactivation & Danger Zone ─── */}
+      <div className="rounded-2xl border border-rose-500/30 bg-rose-950/10 p-6 sm:p-7 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-rose-500">
+              <AlertTriangle className="w-5 h-5" />
+              <h3 className="text-base sm:text-lg font-black tracking-tight">
+                {isNepali ? "खाता निष्क्रिय वा हटाउनुहोस्" : "Account Deactivation & Danger Zone"}
+              </h3>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              {isNepali
+                ? "यदि तपाईं आफ्नो खाता अस्थायी रूपमा निष्क्रिय गर्न वा पूर्ण रूपमा बन्द गर्न चाहनुहुन्छ भने, तलको बटन थिच्नुहोस्।"
+                : "Deactivating your account will pause your real-time alerts and revoke all active session tokens on this device."}
+            </p>
+          </div>
+
+          <button
+            onClick={() => setShowDeactivateModal(true)}
+            className="px-5 py-2.5 rounded-xl border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 font-bold text-sm flex items-center gap-2 transition-all cursor-pointer shrink-0 shadow-xs"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>{isNepali ? "खाता निष्क्रिय गर्नुहोस्" : "Deactivate Account"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ─── Deactivation Confirmation Modal ─── */}
+      {showDeactivateModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in-0 duration-150">
+          <div className="rounded-2xl border border-rose-500/40 bg-card p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-center gap-3 text-rose-500">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-foreground">
+                  {isNepali ? "के तपाईं निश्चित हुनुहुन्छ?" : "Deactivate Account?"}
+                </h3>
+                <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              {isNepali
+                ? "पुष्टिका लागि तल 'DEACTIVATE' टाइप गर्नुहोस् र खाता निष्क्रिय गर्नुहोस् बटन थिच्नुहोस्।"
+                : "Please type <strong>DEACTIVATE</strong> below to confirm account deactivation and session termination."}
+            </p>
+
+            <input
+              type="text"
+              value={confirmDeleteInput}
+              onChange={(e) => setConfirmDeleteInput(e.target.value)}
+              placeholder="Type DEACTIVATE"
+              className="w-full px-4 py-2.5 rounded-xl border border-border/80 bg-background text-sm text-foreground font-mono focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+
+            {actionMessage && (
+              <p className="text-xs text-emerald-400 font-bold text-center">{actionMessage}</p>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setShowDeactivateModal(false);
+                  setConfirmDeleteInput("");
+                }}
+                className="px-4 py-2 rounded-xl border border-border bg-background hover:bg-muted text-foreground font-semibold text-sm cursor-pointer"
+              >
+                {isNepali ? "रद्द गर्नुहोस्" : "Cancel"}
+              </button>
+
+              <button
+                onClick={handleDeactivateAccount}
+                disabled={confirmDeleteInput.trim().toUpperCase() !== "DEACTIVATE" || isDeactivating}
+                className={cn(
+                  "px-5 py-2 rounded-xl font-bold text-sm text-white transition-all cursor-pointer flex items-center gap-1.5",
+                  confirmDeleteInput.trim().toUpperCase() === "DEACTIVATE" && !isDeactivating
+                    ? "bg-rose-600 hover:bg-rose-700 shadow-md"
+                    : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+                )}
+              >
+                {isDeactivating ? "Processing..." : isNepali ? "पुष्टि गर्नुहोस्" : "Confirm Deactivation"}
+              </button>
+            </div>
           </div>
         </div>
       )}

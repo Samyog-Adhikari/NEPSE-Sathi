@@ -119,13 +119,13 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
-    @apply bg-background text-foreground;
-    }
+    @apply bg-background text-foreground text-sm antialiased selection:bg-emerald-500/20 selection:text-emerald-400;
+  }
   html {
-    @apply font-sans;
-    }
+    @apply font-sans text-[13.5px] sm:text-[14px];
+  }
 }
 
 @keyframes marquee {
