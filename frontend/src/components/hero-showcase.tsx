@@ -20,6 +20,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+import { createClient } from "@/lib/supabase/client";
+
 interface HeroShowcaseProps {
   locale?: string;
 }
@@ -28,6 +30,14 @@ export function HeroShowcase({ locale = "en" }: HeroShowcaseProps) {
   const isNepali = locale === "ne";
   const [timeRange, setTimeRange] = React.useState<"1D" | "1W" | "1M" | "3M" | "1Y" | "ALL">("1D");
   const [stockTab, setStockTab] = React.useState<"All" | "Commercial" | "Development" | "Finance">("All");
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+
+  React.useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then((res: any) => {
+      if (res?.data?.user) setIsLoggedIn(true);
+    });
+  }, []);
 
   const topGainers = [
     { symbol: "NABIL", name: "Nabil", price: "1,620.00", change: "+4.21%" },
@@ -48,15 +58,15 @@ export function HeroShowcase({ locale = "en" }: HeroShowcaseProps) {
   ];
 
   return (
-    <section className="pt-6 sm:pt-12 pb-16 px-4 sm:px-6 max-w-6xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+    <section className="pt-4 sm:pt-8 pb-12 px-4 sm:px-6 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
         {/* Left Column: Headline, Description & CTAs */}
-        <div className="lg:col-span-6 space-y-6 text-left">
+        <div className="lg:col-span-6 space-y-4 text-left">
           {/* Green Pill Badge */}
           <div className="inline-flex items-center">
             <Badge
               variant="outline"
-              className="gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 shadow-2xs"
+              className="gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 shadow-2xs"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>{isNepali ? "नेपालको सेयर बजार, अब सहज र सरल" : "Nepal's Stock Market, Made Simple"}</span>
@@ -64,8 +74,8 @@ export function HeroShowcase({ locale = "en" }: HeroShowcaseProps) {
           </div>
 
           {/* Main Hero Headline */}
-          <div className="space-y-3">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.12]">
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground leading-[1.15]">
               {isNepali ? (
                 <>
                   नेप्सेको लागि तपाईंको <br />
@@ -79,11 +89,11 @@ export function HeroShowcase({ locale = "en" }: HeroShowcaseProps) {
               )}
             </h1>
 
-            <div className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+            <div className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
               {isNepali ? "ट्र्याक गर्नुहोस्। विश्लेषण गर्नुहोस्। वृद्धि गर्नुहोस्।" : "Track. Analyze. Grow."}
             </div>
 
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-lg">
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-lg">
               {isNepali
                 ? "प्रत्यक्ष बजार अन्तर्दृष्टि प्राप्त गर्नुहोस्, ताजा समाचारहरूसँग अपडेट रहनुहोस्, र स्मार्ट लगानी निर्णयहरू गर्नुहोस् — सबै एउटै प्लेटफर्ममा।"
                 : "Get real-time market insights, stay updated with the latest news, and make smarter investment decisions — all in one place."}
@@ -91,26 +101,26 @@ export function HeroShowcase({ locale = "en" }: HeroShowcaseProps) {
           </div>
 
           {/* Dual Action CTA Buttons */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-3 pt-1">
             <Link
-              href={`/${locale}/auth/register`}
+              href={isLoggedIn ? `/${locale}/dashboard` : `/${locale}/auth/register`}
               className={cn(
-                buttonVariants({ size: "lg" }),
-                "rounded-full gap-2 px-7 h-12 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 group cursor-pointer transition-all"
+                buttonVariants({ size: "default" }),
+                "rounded-full gap-2 px-6 h-10 text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 group cursor-pointer transition-all"
               )}
             >
-              <span>{isNepali ? "सुरु गर्नुहोस्" : "Get Started"}</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span>{isLoggedIn ? (isNepali ? "ड्यासबोर्डमा जानुहोस्" : "Go to Dashboard") : (isNepali ? "सुरु गर्नुहोस्" : "Get Started")}</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </Link>
 
             <Link
-              href={`/${locale}/features`}
+              href={`/${locale}/market`}
               className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "rounded-full px-7 h-12 text-sm font-medium border-border/80 bg-background/80 hover:bg-accent cursor-pointer transition-colors"
+                buttonVariants({ variant: "outline", size: "default" }),
+                "rounded-full px-5 h-10 text-xs sm:text-sm font-medium border-border/80 bg-background/80 hover:bg-accent cursor-pointer transition-colors"
               )}
             >
-              <span>{isNepali ? "थप जान्नुहोस्" : "Learn More"}</span>
+              <span>{isNepali ? "प्रत्यक्ष बजार हब" : "Live Market Hub"}</span>
             </Link>
           </div>
 

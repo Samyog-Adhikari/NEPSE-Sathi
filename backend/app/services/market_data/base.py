@@ -55,6 +55,8 @@ class TopMovers(BaseModel):
     gainers: List[StockPricePoint]
     losers: List[StockPricePoint]
     active: List[StockPricePoint]
+    by_volume: List[StockPricePoint] = []
+    by_turnover: List[StockPricePoint] = []
 
 class MarketDataProvider(ABC):
     """

@@ -47,11 +47,16 @@ async def background_scheduler():
                     last_market_run = now_ts
                     await run_market_pipeline()
 
-            # 2. IPO & News Scrape (runs every 6 hours 24/7)
+            # 2. IPO & News Scrape & Dynamic Holiday check (runs every 6 hours 24/7)
             if now_ts - last_ipo_run >= IPO_INTERVAL:
-                logger.info("Scheduler: Triggering 6-hour IPO & News ingestion...")
+                logger.info("Scheduler: Triggering 6-hour IPO, News, and Hamro Patro Holiday sync...")
                 last_ipo_run = now_ts
                 await run_ipo_news_pipeline()
+                try:
+                    from app.services.holiday_service import holiday_service
+                    await holiday_service.scrape_hamropatro_holidays()
+                except Exception as e:
+                    logger.warning(f"Hamro Patro scheduled holiday sync note: {e}")
 
         except asyncio.CancelledError:
             logger.info("Background scheduler successfully shutdown.")
@@ -62,12 +67,19 @@ async def background_scheduler():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from app.services.telegram_bot import telegram_bot
+    from app.services.holiday_service import holiday_service
+    # Run initial holiday sync in background
+    asyncio.create_task(holiday_service.scrape_hamropatro_holidays())
     scheduler_task = asyncio.create_task(background_scheduler())
+    bot_task = asyncio.create_task(telegram_bot.start_polling())
     yield
     scheduler_task.cancel()
+    telegram_bot.stop_polling()
+    bot_task.cancel()
     try:
-        await scheduler_task
-    except asyncio.CancelledError:
+        await asyncio.gather(scheduler_task, bot_task, return_exceptions=True)
+    except Exception:
         pass
 
 app = FastAPI(

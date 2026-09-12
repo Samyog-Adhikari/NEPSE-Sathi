@@ -129,21 +129,27 @@ declare module "lucide-react" {
 
   // Additional icons for About, Contact & Features pages
   export const Bug: LucideIcon;
+  export const Briefcase: LucideIcon;
   export const Code: LucideIcon;
   export const Code2: LucideIcon;
   export const Coffee: LucideIcon;
+  export const Edit3: LucideIcon;
   export const Facebook: LucideIcon;
   export const GraduationCap: LucideIcon;
   export const Handshake: LucideIcon;
   export const Headphones: LucideIcon;
   export const Instagram: LucideIcon;
+  export const KeyRound: LucideIcon;
   export const MapPin: LucideIcon;
   export const Mountain: LucideIcon;
   export const Palette: LucideIcon;
+  export const PauseCircle: LucideIcon;
   export const Pen: LucideIcon;
   export const Phone: LucideIcon;
   export const Rocket: LucideIcon;
+  export const Save: LucideIcon;
   export const Send: LucideIcon;
+  export const Trash2: LucideIcon;
   export const Trophy: LucideIcon;
   export const UserCircle: LucideIcon;
   export const UsersRound: LucideIcon;

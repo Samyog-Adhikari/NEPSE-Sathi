@@ -3,6 +3,9 @@
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
 
 export default function AppProtectedLayout({
   children,
@@ -13,6 +16,8 @@ export default function AppProtectedLayout({
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = React.useState(true);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
 
   const locale = pathname.startsWith("/ne") ? "ne" : "en";
 
@@ -46,14 +51,16 @@ export default function AppProtectedLayout({
 
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session && mounted) {
-        setIsAuthenticated(false);
-        router.replace(`/${locale}/auth/login?redirect=${encodeURIComponent(pathname)}`);
-      } else if (session && mounted) {
-        setIsAuthenticated(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        if (!session && mounted) {
+          setIsAuthenticated(false);
+          router.replace(`/${locale}/auth/login?redirect=${encodeURIComponent(pathname)}`);
+        } else if (session && mounted) {
+          setIsAuthenticated(true);
+        }
       }
-    });
+    );
 
     return () => {
       mounted = false;
@@ -77,8 +84,24 @@ export default function AppProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {children}
+    <div className="min-h-screen bg-background text-foreground flex">
+      {/* Sidebar */}
+      <DashboardSidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+      />
+
+      {/* Main area */}
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        <DashboardTopbar
+          onMobileMenuToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

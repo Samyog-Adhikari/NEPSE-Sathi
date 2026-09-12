@@ -86,7 +86,13 @@ async def scrape_latest_stocks() -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
         low_price = clean_num(tds[5])
         volume = clean_int(tds[6])
         pclose = clean_num(tds[7])
-        diff = clean_num(tds[8]) if len(tds) > 8 else round(ltp - pclose, 2)
+        diff = clean_num(tds[8]) if len(tds) > 8 and tds[8].strip() else 0.0
+
+        if (diff == 0.0 or abs(diff) < 0.001) and pct_change != 0.0 and ltp > 0:
+            pclose = round(ltp / (1.0 + (pct_change / 100.0)), 2)
+            diff = round(ltp - pclose, 2)
+        elif pclose == 0.0 and ltp > 0:
+            pclose = round(ltp - diff, 2)
 
         turnover = round(ltp * volume, 2)
         total_volume += volume
@@ -150,10 +156,40 @@ async def ingest_stocks() -> Dict[str, Any]:
         if ok:
             inserted += len(batch)
 
-    logger.info(f"Ingested {inserted}/{len(stocks)} stocks into Supabase.")
+    # 3. Calculate market breadth & sync aggregates to latest market_summary
+    advances = sum(1 for s in stocks if s.get("percentage_change", 0.0) > 0)
+    declines = sum(1 for s in stocks if s.get("percentage_change", 0.0) < 0)
+    unchanged = sum(1 for s in stocks if s.get("percentage_change", 0.0) == 0)
+
+    try:
+        latest_summary = await db.select("market_summary", order="date.desc", limit=1)
+        if latest_summary:
+            summary_id = latest_summary[0]["id"]
+            await db.update(
+                "market_summary",
+                {
+                    "total_turnover": agg["total_turnover"],
+                    "total_shares": agg["total_volume"],
+                    "advances": advances,
+                    "declines": declines,
+                    "unchanged": unchanged,
+                    "last_updated": datetime.now(timezone.utc).isoformat()
+                },
+                filters={"id": f"eq.{summary_id}"}
+            )
+    except Exception as e:
+        logger.warning(f"Could not update market_summary aggregates: {e}")
+
+    logger.info(f"Ingested {inserted}/{len(stocks)} stocks into Supabase. Advances: {advances}, Declines: {declines}, Unchanged: {unchanged}")
     return {
         "success": True,
         "total_scraped": len(stocks),
         "total_upserted": inserted,
-        "aggregate": agg
+        "aggregate": agg,
+        "breadth": {
+            "advances": advances,
+            "declines": declines,
+            "unchanged": unchanged
+        }
     }
+
