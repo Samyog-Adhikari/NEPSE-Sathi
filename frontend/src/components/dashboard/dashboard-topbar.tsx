@@ -28,6 +28,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { getStockBrand } from "@/lib/logos";
 
 interface DashboardTopbarProps {
   onMobileMenuToggle: () => void;
@@ -111,13 +112,26 @@ export function DashboardTopbar({ onMobileMenuToggle }: DashboardTopbarProps) {
   // Fetch stocks for instant search
   React.useEffect(() => {
     setIsSearchLoading(true);
-    apiFetch<any>("/api/v1/stocks?limit=400")
+    apiFetch<any>("/api/v1/stocks?limit=500")
       .then((res) => {
-        if (res.data?.data && Array.isArray(res.data.data)) {
-          setAllStocks(res.data.data);
+        const raw = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : []);
+        if (raw.length > 0) {
+          setAllStocks(raw);
+        } else {
+          // Fallback to /market/stocks
+          apiFetch<any>("/api/v1/market/stocks").then((mRes) => {
+            const mRaw = Array.isArray(mRes.data) ? mRes.data : (Array.isArray(mRes.data?.data) ? mRes.data.data : []);
+            if (mRaw.length > 0) setAllStocks(mRaw);
+          });
         }
       })
-      .catch((err) => console.error("Search stocks load error:", err))
+      .catch((err) => {
+        console.error("Search stocks load error:", err);
+        apiFetch<any>("/api/v1/market/stocks").then((mRes) => {
+          const mRaw = Array.isArray(mRes.data) ? mRes.data : (Array.isArray(mRes.data?.data) ? mRes.data.data : []);
+          if (mRaw.length > 0) setAllStocks(mRaw);
+        });
+      })
       .finally(() => setIsSearchLoading(false));
   }, []);
 
@@ -186,6 +200,17 @@ export function DashboardTopbar({ onMobileMenuToggle }: DashboardTopbarProps) {
     router.push(`/${locale}/technicals?symbol=${symbol}`);
   };
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (searchResults.length > 0) {
+        handleSelectStock(searchResults[0].symbol);
+      } else if (searchQuery.trim()) {
+        router.push(`/${locale}/stocks?search=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchFocused(false);
+      }
+    }
+  };
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const markAllAsRead = () => {
@@ -233,6 +258,7 @@ export function DashboardTopbar({ onMobileMenuToggle }: DashboardTopbarProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchFocused(true)}
+              onKeyDown={handleSearchKeyDown}
               className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-border/60 bg-muted/30 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:bg-background transition-all"
             />
             {searchQuery && (
@@ -262,6 +288,7 @@ export function DashboardTopbar({ onMobileMenuToggle }: DashboardTopbarProps) {
                   searchResults.map((stk) => {
                     const isUp = stk.point_change > 0;
                     const isDown = stk.point_change < 0;
+                    const brand = getStockBrand(stk.symbol);
                     return (
                       <button
                         key={stk.symbol}
@@ -269,18 +296,18 @@ export function DashboardTopbar({ onMobileMenuToggle }: DashboardTopbarProps) {
                         className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-muted/60 transition-colors text-left group cursor-pointer"
                       >
                         <div className="min-w-0 pr-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-bold text-xs text-foreground group-hover:text-emerald-600 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-sm text-foreground group-hover:text-emerald-500 transition-colors">
                               {stk.symbol}
                             </span>
                             {stk.sector && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-muted/70 text-muted-foreground font-sans truncate max-w-[100px]">
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-muted text-muted-foreground font-sans truncate max-w-[120px]">
                                 {stk.sector}
                               </span>
                             )}
                           </div>
                           {stk.name && (
-                            <span className="text-[10px] text-muted-foreground block truncate max-w-[170px]">
+                            <span className="text-xs text-muted-foreground block truncate max-w-[200px] mt-0.5">
                               {stk.name}
                             </span>
                           )}
@@ -288,12 +315,12 @@ export function DashboardTopbar({ onMobileMenuToggle }: DashboardTopbarProps) {
 
                         <div className="text-right shrink-0">
                           <div className="font-mono text-xs font-bold text-foreground">
-                            Rs. {stk.ltp?.toFixed(1) || "0.0"}
+                            Rs. {stk.ltp ? stk.ltp.toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "0.0"}
                           </div>
                           <div
                             className={cn(
                               "text-[10px] font-mono font-semibold flex items-center justify-end gap-0.5",
-                              isUp ? "text-emerald-600 dark:text-emerald-400" : isDown ? "text-rose-500" : "text-blue-500"
+                              isUp ? "text-emerald-500" : isDown ? "text-rose-500" : "text-sky-500"
                             )}
                           >
                             {isUp ? "+" : ""}{stk.change_percent?.toFixed(2)}%

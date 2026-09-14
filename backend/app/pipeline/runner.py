@@ -10,6 +10,7 @@ from app.pipeline.scrapers.market_scraper import ingest_market_summary
 from app.pipeline.scrapers.floorsheet_scraper import ingest_floorsheet
 from app.pipeline.scrapers.ipo_scraper import ingest_ipos
 from app.pipeline.scrapers.news_scraper import ingest_news
+from app.pipeline.scrapers.reports_scraper import ingest_company_reports
 
 # ---------- Nepal Time Helpers ----------
 
@@ -329,6 +330,16 @@ async def run_ipo_news_pipeline() -> Dict[str, Any]:
         errors.append(err)
         results["news"] = {"success": False, "error": str(e)}
 
+    # 3. Company Financial Reports & Audit Analysis
+    try:
+        logger.info("IPO/News Pipeline: Ingesting Company Reports & Audit Analysis...")
+        results["reports"] = await ingest_company_reports()
+    except Exception as e:
+        err = f"Reports scraper error: {str(e)}"
+        logger.error(err, exc_info=True)
+        errors.append(err)
+        results["reports"] = {"success": False, "error": str(e)}
+
     duration_s = round(time.perf_counter() - start_time, 2)
     has_errors = len(errors) > 0
 
@@ -402,13 +413,23 @@ async def run_full_pipeline() -> Dict[str, Any]:
 
     # 5. News & Announcements
     try:
-        logger.info("Full Pipeline 5/5: Ingesting News...")
+        logger.info("Full Pipeline 5/6: Ingesting News...")
         results["news"] = await ingest_news()
     except Exception as e:
         err = f"News scraper error: {str(e)}"
         logger.error(err, exc_info=True)
         errors.append(err)
         results["news"] = {"success": False, "error": str(e)}
+
+    # 6. Company Past Reports & Statutory Audit Analysis (for RAG)
+    try:
+        logger.info("Full Pipeline 6/6: Ingesting Company Reports & Audit Analysis...")
+        results["reports"] = await ingest_company_reports()
+    except Exception as e:
+        err = f"Reports scraper error: {str(e)}"
+        logger.error(err, exc_info=True)
+        errors.append(err)
+        results["reports"] = {"success": False, "error": str(e)}
 
     duration_s = round(time.perf_counter() - start_time, 2)
     has_errors = len(errors) > 0

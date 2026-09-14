@@ -21,6 +21,15 @@ export default function AppProtectedLayout({
 
   const locale = pathname.startsWith("/ne") ? "ne" : "en";
 
+  // Automatically minimize sidebar only on technical analysis charting page
+  React.useEffect(() => {
+    if (pathname.includes("/technicals")) {
+      setSidebarCollapsed(true);
+    } else {
+      setSidebarCollapsed(false);
+    }
+  }, [pathname]);
+
   React.useEffect(() => {
     let mounted = true;
 

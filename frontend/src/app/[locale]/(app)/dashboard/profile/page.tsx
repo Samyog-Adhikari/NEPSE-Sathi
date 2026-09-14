@@ -110,6 +110,24 @@ export default function ProfilePage() {
     }
   };
 
+  // Handle direct avatar upload from profile
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      alert("Image size should be less than 3MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setAvatarUrl(base64);
+      localStorage.setItem("nepse_user_avatar", base64);
+      window.dispatchEvent(new CustomEvent("nepse_avatar_changed", { detail: base64 }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto pb-16">
       {/* ─── Profile Header Banner ─── */}
@@ -118,23 +136,40 @@ export default function ProfilePage() {
 
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            {/* Avatar with Persistent Fallback */}
-            <div className="relative shrink-0">
-              <Avatar className="w-24 h-24 sm:w-28 sm:h-28 ring-4 ring-emerald-500/20 shadow-md">
-                <AvatarImage
-                  src={avatarUrl}
-                  alt={fullName}
-                  className="object-cover"
-                  onError={(e) => {
-                    // Prevent image disappearing on network blip
-                    (e.target as HTMLImageElement).src = "/logo.png";
-                  }}
-                />
-                <AvatarFallback className="bg-emerald-600 text-white font-black text-2xl">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-4 ring-card" title="Online" />
+            {/* Rock-solid, Persistent Avatar with Direct Change Button */}
+            <div className="relative shrink-0 group">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-emerald-500/20 shadow-md bg-emerald-950 flex items-center justify-center relative">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={fullName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/logo.png";
+                    }}
+                  />
+                ) : (
+                  <span className="bg-emerald-600 text-white font-black text-2xl w-full h-full flex items-center justify-center">
+                    {initials}
+                  </span>
+                )}
+                {/* Direct photo upload trigger on hover */}
+                <label
+                  htmlFor="profile-avatar-input"
+                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[11px] font-bold cursor-pointer transition-opacity backdrop-blur-xs"
+                >
+                  <Edit3 className="w-4 h-4 mb-1" />
+                  <span>{isNepali ? "फोटो बदल्नुहोस्" : "Change Photo"}</span>
+                </label>
+              </div>
+              <input
+                id="profile-avatar-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-4 ring-card" title="Active" />
             </div>
 
             {/* Main User Details */}
@@ -186,52 +221,52 @@ export default function ProfilePage() {
       {/* ─── Key Stats Grid ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Portfolio Value */}
-        <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-xs flex items-center justify-between">
+          <div className="space-y-1.5">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               {isNepali ? "कुल पोर्टफोलियो" : "Portfolio Value"}
             </span>
-            <div className="font-mono text-xl sm:text-2xl font-black text-foreground">
+            <div className="font-mono text-2xl sm:text-3xl font-black text-foreground">
               Rs. 1,24,568
             </div>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-              ↑ +18.4% Return
+            <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+              ↑ +18.4% Overall Gain
             </span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
             <Briefcase className="w-6 h-6" />
           </div>
         </div>
 
-        {/* Win Rate */}
-        <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {isNepali ? "सफलता दर" : "Trade Win Rate"}
+        {/* Watchlist & Tracking */}
+        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-xs flex items-center justify-between">
+          <div className="space-y-1.5">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              {isNepali ? "ट्र्याक गरिएका स्टकहरू" : "Tracked Equities"}
             </span>
-            <div className="font-mono text-xl sm:text-2xl font-black text-foreground">
-              68.5%
+            <div className="font-mono text-2xl sm:text-3xl font-black text-foreground">
+              18 Stocks
             </div>
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-              ↑ 28 Closed Trades
+            <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+              Live Alerts Enabled
             </span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
             <TrendingUp className="w-6 h-6" />
           </div>
         </div>
 
         {/* Focus Sector */}
-        <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-xs flex items-center justify-between">
+          <div className="space-y-1.5">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               {isNepali ? "मुख्य क्षेत्र" : "Focus Sector"}
             </span>
-            <div className="text-lg sm:text-xl font-black text-foreground truncate max-w-[150px]">
-              Commercial Banks
+            <div className="text-xl sm:text-2xl font-black text-foreground truncate max-w-[150px]">
+              Banking
             </div>
             <span className="text-xs text-muted-foreground font-medium">
-              & Hydropower
+              & Hydropower Co.
             </span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
@@ -240,20 +275,20 @@ export default function ProfilePage() {
         </div>
 
         {/* Security & 2FA */}
-        <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-xs flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {isNepali ? "सुरक्षा स्थिति" : "Account Security"}
+        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-xs flex items-center justify-between">
+          <div className="space-y-1.5">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              {isNepali ? "सुरक्षा स्थिति" : "Account Status"}
             </span>
-            <div className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-              <CheckCircle2 className="w-5 h-5" />
-              Protected
+            <div className="text-xl sm:text-2xl font-black text-emerald-500 flex items-center gap-1.5">
+              <CheckCircle2 className="w-6 h-6" />
+              Verified
             </div>
             <span className="text-xs text-muted-foreground font-medium">
-              Telegram Alerts Linked
+              TMS & Bot Connected
             </span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
             <ShieldCheck className="w-6 h-6" />
           </div>
         </div>
@@ -262,87 +297,87 @@ export default function ProfilePage() {
       {/* ─── Profile Details & Trading Preferences ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Investor Profile Summary */}
-        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-xs space-y-4">
+        <div className="rounded-2xl border border-border/70 bg-card p-6 sm:p-7 shadow-xs space-y-5">
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
-            <div className="flex items-center gap-2">
-              <User className="w-5 h-5 text-emerald-600" />
-              <h3 className="text-base font-bold text-foreground">
+            <div className="flex items-center gap-2.5">
+              <User className="w-5 h-5 text-emerald-500" />
+              <h3 className="text-lg font-bold text-foreground">
                 {isNepali ? "व्यक्तिगत विवरण" : "Personal Information"}
               </h3>
             </div>
             <Link
               href={`/${locale}/dashboard/settings`}
-              className="text-xs font-bold text-emerald-600 hover:underline"
+              className="text-xs font-bold text-emerald-500 hover:underline"
             >
               {isNepali ? "परिवर्तन गर्नुहोस्" : "Update"}
             </Link>
           </div>
 
-          <div className="space-y-3.5 text-sm">
-            <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">{isNepali ? "पुरा नाम" : "Full Name"}</span>
+          <div className="space-y-4 text-base">
+            <div className="flex items-center justify-between py-1 border-b border-border/30">
+              <span className="text-muted-foreground text-sm">{isNepali ? "पुरा नाम" : "Full Name"}</span>
               <span className="font-bold text-foreground">{fullName}</span>
             </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">{isNepali ? "इमेल ठेगाना" : "Email Address"}</span>
+            <div className="flex items-center justify-between py-1 border-b border-border/30">
+              <span className="text-muted-foreground text-sm">{isNepali ? "इमेल ठेगाना" : "Email Address"}</span>
               <span className="font-bold text-foreground">{email}</span>
             </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">{isNepali ? "फोन नम्बर" : "Phone"}</span>
+            <div className="flex items-center justify-between py-1 border-b border-border/30">
+              <span className="text-muted-foreground text-sm">{isNepali ? "फोन नम्बर" : "Phone"}</span>
               <span className="font-mono font-bold text-foreground">+977 9800000000</span>
             </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">{isNepali ? "केवाइसी प्रमाणीकरण" : "KYC Status"}</span>
-              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+            <div className="flex items-center justify-between py-1 border-b border-border/30">
+              <span className="text-muted-foreground text-sm">{isNepali ? "केवाइसी प्रमाणीकरण" : "KYC Status"}</span>
+              <span className="inline-flex items-center gap-1.5 text-emerald-500 font-bold">
                 <CheckCircle2 className="w-4 h-4" /> Completed
               </span>
             </div>
             <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">{isNepali ? "समय क्षेत्र" : "Timezone"}</span>
+              <span className="text-muted-foreground text-sm">{isNepali ? "समय क्षेत्र" : "Timezone"}</span>
               <span className="font-mono font-bold text-foreground">Asia/Kathmandu (NPT +5:45)</span>
             </div>
           </div>
         </div>
 
         {/* Trading Preferences */}
-        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-xs space-y-4">
+        <div className="rounded-2xl border border-border/70 bg-card p-6 sm:p-7 shadow-xs space-y-5">
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
-            <div className="flex items-center gap-2">
-              <Sliders className="w-5 h-5 text-emerald-600" />
-              <h3 className="text-base font-bold text-foreground">
+            <div className="flex items-center gap-2.5">
+              <Sliders className="w-5 h-5 text-emerald-500" />
+              <h3 className="text-lg font-bold text-foreground">
                 {isNepali ? "कारोबार प्राथमिकताहरू" : "Trading & Alert Preferences"}
               </h3>
             </div>
             <Link
               href={`/${locale}/dashboard/settings`}
-              className="text-xs font-bold text-emerald-600 hover:underline"
+              className="text-xs font-bold text-emerald-500 hover:underline"
             >
               {isNepali ? "सम्पादन" : "Configure"}
             </Link>
           </div>
 
-          <div className="space-y-3.5 text-sm">
-            <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">{isNepali ? "लगानी रणनीति" : "Strategy"}</span>
+          <div className="space-y-4 text-base">
+            <div className="flex items-center justify-between py-1 border-b border-border/30">
+              <span className="text-muted-foreground text-sm">{isNepali ? "लगानी रणनीति" : "Strategy"}</span>
               <span className="font-bold text-foreground">Growth & Value Investing</span>
             </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">{isNepali ? "जोखिम स्तर" : "Risk Tolerance"}</span>
+            <div className="flex items-center justify-between py-1 border-b border-border/30">
+              <span className="text-muted-foreground text-sm">{isNepali ? "जोखिम स्तर" : "Risk Tolerance"}</span>
               <span className="font-bold text-foreground">Moderate</span>
             </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">{isNepali ? "चार्ट अन्तराल" : "Default Chart Interval"}</span>
+            <div className="flex items-center justify-between py-1 border-b border-border/30">
+              <span className="text-muted-foreground text-sm">{isNepali ? "चार्ट अन्तराल" : "Default Chart Interval"}</span>
               <span className="font-mono font-bold text-foreground">1D / 5m Intraday</span>
             </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">{isNepali ? "टेलिग्राम सूचना" : "Telegram Bot Alerts"}</span>
-              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+            <div className="flex items-center justify-between py-1 border-b border-border/30">
+              <span className="text-muted-foreground text-sm">{isNepali ? "टेलिग्राम सूचना" : "Telegram Bot Alerts"}</span>
+              <span className="inline-flex items-center gap-1.5 text-emerald-500 font-bold">
                 <CheckCircle2 className="w-4 h-4" /> Enabled (@NEPSE_Sathi_Bot)
               </span>
             </div>
             <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">{isNepali ? "इमेल बजार सारांश" : "Daily Dispatch"}</span>
-              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+              <span className="text-muted-foreground text-sm">{isNepali ? "इमेल बजार सारांश" : "Daily Dispatch"}</span>
+              <span className="inline-flex items-center gap-1.5 text-emerald-500 font-bold">
                 <CheckCircle2 className="w-4 h-4" /> Subscribed
               </span>
             </div>

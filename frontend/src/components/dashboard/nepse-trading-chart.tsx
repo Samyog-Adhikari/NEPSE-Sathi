@@ -43,17 +43,10 @@ export function NepseTradingChart({
   isLoading = false,
   isMarketOpen = false,
 }: NepseTradingChartProps) {
-  // Timeframe selection: When open -> 5m, 30m, 1h, 2h; When closed -> 1D
-  const timeframes = isMarketOpen ? ["5m", "30m", "1h", "2h"] : ["1D"];
-  const [activeTimeframe, setActiveTimeframe] = React.useState(timeframes[0] || "1D");
+  // Timeframe selection: Full suite 5m, 15m, 30m, 1h, 2h, 1D, 1W, 1M
+  const timeframes = ["5m", "15m", "30m", "1h", "2h", "1D", "1W", "1M"];
+  const [activeTimeframe, setActiveTimeframe] = React.useState(initialTimeframe || "1D");
   const [chartType, setChartType] = React.useState<"candles" | "area">("candles");
-
-  // Synchronize timeframe if market status changes
-  React.useEffect(() => {
-    if (!timeframes.includes(activeTimeframe)) {
-      setActiveTimeframe(timeframes[0]);
-    }
-  }, [isMarketOpen]);
 
   const [hoverData, setHoverData] = React.useState<{
     open: number;
